@@ -2,7 +2,6 @@ use std::{time::{Duration, Instant}, thread, collections::HashMap};
 use sysinfo::{System, SystemExt, ProcessExt, DiskExt, CpuExt, NetworkExt, NetworksExt};
 use humansize::{format_size, BINARY};
 
-// Structure to hold system metrics
 struct SystemMetrics {
     timestamp: Instant,
     cpu_usage: Vec<f32>,
@@ -63,22 +62,17 @@ fn main() {
     // Wait for a short period to measure CPU usage
     thread::sleep(Duration::from_millis(500));
     
-    // Take second measurement
     sys.refresh_all();
 
-    // Collect and sort processes by memory usage
     let mut processes: Vec<_> = sys.processes()
         .values()
         .collect();
     
-    // Sort by memory usage
     processes.sort_by(|a, b| b.memory().cmp(&a.memory()));
 
-    // Display header
     println!("{:<40} {:>10} {:>15}", "Process Name", "CPU %", "Memory Usage");
     println!("{:-<67}", "");
 
-    // Group similar processes and sum their resources
     let mut grouped_processes: HashMap<String, (f32, u64)> = HashMap::new();
     
     for process in processes {
@@ -95,12 +89,11 @@ fn main() {
             .or_insert((cpu, memory));
     }
 
-    // Display grouped processes
     let mut grouped_vec: Vec<_> = grouped_processes.into_iter().collect();
     grouped_vec.sort_by(|a, b| b.1.1.cmp(&a.1.1));  // Sort by memory usage
 
     for (name, (cpu, memory)) in grouped_vec {
-        if memory > 0 {  // Only show processes using resources
+        if memory > 0 { 
             println!("{:<40} {:>10.1} {:>15}",
                 name,
                 cpu.max(0.0),  // Ensure CPU usage isn't negative
@@ -197,7 +190,6 @@ fn display_system_info(sys: &System) {
 fn display_performance_analysis(metrics_history: &[SystemMetrics]) {
     println!("\n=== Performance Analysis ===");
     
-    // CPU Analysis
     let cpu_trend = analyze_cpu_trend(metrics_history);
     println!("\nCPU Usage Trends:");
     for (core, trend) in cpu_trend.iter().enumerate() {
@@ -207,14 +199,12 @@ fn display_performance_analysis(metrics_history: &[SystemMetrics]) {
                 classify_usage_pattern(trend.pattern));
     }
 
-    // Memory Analysis
     let memory_trend = analyze_memory_trend(metrics_history);
     println!("\nMemory Usage:");
     println!("Average: {}", format_size(memory_trend.average as u64 * 1024, BINARY));
     println!("Peak: {}", format_size(memory_trend.peak as u64 * 1024, BINARY));
     println!("Pattern: {}", classify_usage_pattern(memory_trend.pattern));
 
-    // Network Analysis
     let network_trend = analyze_network_trend(metrics_history);
     println!("\nNetwork Activity:");
     println!("Avg Throughput: ↓{}ps, ↑{}ps",
@@ -255,7 +245,6 @@ fn perform_security_analysis(sys: &System, metrics_history: &[SystemMetrics]) ->
         high_resource_usage: Vec::new(),
     };
 
-    // Process Analysis
     for process in sys.processes().values() {
         // Check for suspicious process names
         let name = process.name().to_lowercase();
@@ -265,7 +254,6 @@ fn perform_security_analysis(sys: &System, metrics_history: &[SystemMetrics]) ->
             ));
         }
 
-        // Check for unusual resource usage
         if process.cpu_usage() > 90.0 || process.memory() > sys.total_memory() / 10 {
             analysis.high_resource_usage.push(format!(
                 "{} (CPU: {:.1}%, Memory: {})",
@@ -276,7 +264,6 @@ fn perform_security_analysis(sys: &System, metrics_history: &[SystemMetrics]) ->
         }
     }
 
-    // Network Analysis
     let network_baseline = calculate_network_baseline(metrics_history);
     for (interface, data) in sys.networks() {
         let current_throughput = data.received() + data.transmitted();
@@ -296,7 +283,6 @@ fn generate_recommendations(
 ) -> Vec<String> {
     let mut recommendations = Vec::new();
 
-    // Performance Recommendations
     let last_metrics = metrics_history.last().unwrap();
     let memory_usage_percent = (last_metrics.memory_usage as f64 / last_metrics.memory_total as f64 * 100.0) as u64;
 
@@ -305,7 +291,6 @@ fn generate_recommendations(
         recommendations.push("* Run memory diagnostics to check for memory leaks".to_string());
     }
 
-    // CPU-based recommendations
     let high_cpu_cores: Vec<usize> = last_metrics.cpu_usage.iter()
         .enumerate()
         .filter(|(_, &usage)| usage > 90.0)
@@ -330,7 +315,6 @@ fn generate_recommendations(
         recommendations.push("* Monitor network connections for unauthorized access".to_string());
     }
 
-    // Process-specific recommendations
     let process_metrics = &last_metrics.process_metrics;
     let browser_processes: Vec<&ProcessMetrics> = process_metrics.iter()
         .filter(|p| p.name.contains("chrome") || p.name.contains("firefox") || p.name.contains("msedge"))
@@ -342,7 +326,6 @@ fn generate_recommendations(
         recommendations.push("  - Check browser extensions for memory leaks".to_string());
     }
 
-    // General recommendations
     recommendations.push("* Schedule regular system maintenance:".to_string());
     recommendations.push("  - Update system and application software".to_string());
     recommendations.push("  - Run disk cleanup and defragmentation".to_string());
@@ -358,7 +341,6 @@ fn display_recommendations(recommendations: &[String]) {
     }
 }
 
-// Helper functions
 fn is_suspicious_process_name(name: &str) -> bool {
     let suspicious_patterns = [
         "cryptominer", "miner", "malware", "suspicious",
