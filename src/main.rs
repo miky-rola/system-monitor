@@ -6,16 +6,13 @@ use humansize::{format_size, BINARY};
 fn main() {
     println!("System Monitor Starting...\n");
 
-    // Initialize system information
     let mut sys = System::new_all();
     sys.refresh_all();
 
-    // Display OS Information
     println!("=== Operating System Information ===");
     println!("OS: {} {}", sys.name().unwrap_or_default(), sys.os_version().unwrap_or_default());
     println!("Kernel: {}\n", sys.kernel_version().unwrap_or_default());
 
-    // Display Memory Information
     println!("=== Memory Information ===");
     let total_memory = sys.total_memory();
     let used_memory = sys.used_memory();
@@ -27,7 +24,6 @@ fn main() {
     println!("Total Swap: {} GB", total_swap / 1024 / 1024);
     println!("Used Swap: {} GB\n", used_swap / 1024 / 1024);
 
-    // Display CPU Information
     println!("=== CPU Information ===");
     println!("Number of CPUs: {}", sys.cpus().len());
     for (i, cpu) in sys.cpus().iter().enumerate() {
@@ -35,7 +31,6 @@ fn main() {
     }
     println!();
 
-    // Display Disk Information
     println!("=== Disk Information ===");
     for disk in sys.disks() {
         let total = disk.total_space();
@@ -49,7 +44,6 @@ fn main() {
     }
     println!();
 
-    // Display Process Information
     println!("=== Top 10 Processes by Memory Usage ===");
     let mut processes: Vec<_> = sys.processes().values().collect();
     processes.sort_by(|a, b| b.memory().cmp(&a.memory()));
@@ -63,7 +57,6 @@ fn main() {
     }
     println!();
 
-    // Scan files in current directory
     println!("=== File System Scan ===");
     scan_directory(".");
 }
