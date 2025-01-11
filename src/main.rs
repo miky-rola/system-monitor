@@ -12,7 +12,10 @@ fn main() {
 
     // Display System Name/Host Information
     println!("=== System Information ===");
-    println!("Hostname: {}", sys.host_name().unwrap_or_default());
+    println!("Device Name: {}", sys.host_name().unwrap_or_default());
+    if let Some(system_name) = sys.long_os_version() {
+        println!("System: {}", system_name);
+    }
     println!("OS: {} {}", sys.name().unwrap_or_default(), sys.os_version().unwrap_or_default());
     println!("Kernel: {}\n", sys.kernel_version().unwrap_or_default());
 
@@ -80,6 +83,8 @@ fn main() {
     let mut processes: Vec<_> = sys.processes().values().collect();
     processes.sort_by(|a, b| b.memory().cmp(&a.memory()));
     
+    let mut suspicious_processes = Vec::new();
+    
     // Define suspicious patterns
     let suspicious_patterns = vec![
         "cryptominer",
@@ -101,27 +106,94 @@ fn main() {
 
         // Check for suspicious memory usage
         if memory_usage > 1024 * 1024 * 1024 * 100 { // More than 100GB
-            println!("⚠️ WARNING: Unusually high memory usage detected for {}", process.name());
+            suspicious_processes.push(format!("{} (Excessive memory: {})", 
+                process.name(), format_size(memory_usage, BINARY)));
         }
 
         // Check for suspicious process names
         for pattern in &suspicious_patterns {
             if process.name().to_lowercase().contains(pattern) {
-                println!("🚨 ALERT: Potentially suspicious process detected: {}", process.name());
+                suspicious_processes.push(format!("{} (Suspicious name)", process.name()));
             }
         }
     }
 
     // Scan files in current directory with malware detection
     println!("\n=== File System Scan ===");
-    scan_directory(".");
+    let scan_results = scan_directory(".");
+    println!(
+        "Total files: {}\nTotal directories: {}\nTotal size: {}",
+        scan_results.file_count,
+        scan_results.dir_count,
+        format_size(scan_results.total_size, BINARY)
+    );
+
+    // System Health Check Section
+    println!("\n=== System Health Check ===");
+    
+    // Display suspicious processes if any
+    if !suspicious_processes.is_empty() {
+        println!("\n🚨 Suspicious Processes Detected:");
+        for process in suspicious_processes {
+            println!("- {}", process);
+        }
+    } else {
+        println!("✅ No suspicious processes detected");
+    }
+
+    // Display suspicious files if any
+    if !scan_results.suspicious_files.is_empty() {
+        println!("\n⚠️ Potentially Suspicious Files Detected:");
+        for file in scan_results.suspicious_files {
+            println!("- {}", file);
+        }
+    } else {
+        println!("✅ No suspicious files detected");
+    }
+
+    // Recommended Actions Based on System Analysis
+    println!("\n=== Recommended Actions ===");
+    let mut recommendations = Vec::new();
+
+    if memory_usage_percent > 80 {
+        recommendations.push("* Running a full antivirus scan");
+    }
+
+    let high_memory_processes: Vec<_> = processes.iter()
+        .filter(|p| p.memory() * 1024 > 1024 * 1024 * 1024 * 50) // Over 50GB
+        .collect();
+
+    if !high_memory_processes.is_empty() {
+        recommendations.push("* Investigating the browser processes using excessive memory");
+        recommendations.push("* Checking for memory leaks in applications like VS Code and rust-analyzer");
+    }
+
+    recommendations.push("* Monitoring system performance over time to identify patterns");
+
+    if !recommendations.is_empty() {
+        println!("Recommended actions based on system analysis:");
+        for rec in recommendations {
+            println!("{}", rec);
+        }
+    } else {
+        println!("✅ No immediate actions required");
+    }
 }
 
-fn scan_directory(start_path: &str) {
-    let mut total_size: u64 = 0;
-    let mut file_count = 0;
-    let mut dir_count = 0;
-    let mut suspicious_files = Vec::new();
+struct ScanResults {
+    total_size: u64,
+    file_count: u64,
+    dir_count: u64,
+    suspicious_files: Vec<String>,
+}
+
+fn scan_directory(start_path: &str) -> ScanResults {
+    let mut results = ScanResults {
+        total_size: 0,
+        file_count: 0,
+        dir_count: 0,
+        suspicious_files: Vec::new(),
+    };
 
     // Define suspicious file patterns
     let suspicious_extensions = vec![
@@ -139,32 +211,20 @@ fn scan_directory(start_path: &str) {
     {
         if entry.file_type().is_file() {
             if let Ok(metadata) = entry.metadata() {
-                total_size += metadata.len();
-                file_count += 1;
+                results.total_size += metadata.len();
+                results.file_count += 1;
 
                 // Check for suspicious files
                 let path = entry.path().to_string_lossy();
                 if suspicious_extensions.iter().any(|ext| path.to_lowercase().ends_with(ext)) 
                    && metadata.len() > 1024 * 1024 * 10 { // Files larger than 10MB
-                    suspicious_files.push(path.to_string());
+                    results.suspicious_files.push(path.to_string());
                 }
             }
         } else if entry.file_type().is_dir() {
-            dir_count += 1;
+            results.dir_count += 1;
         }
     }
 
-    println!(
-        "Total files: {}\nTotal directories: {}\nTotal size: {}",
-        file_count,
-        dir_count,
-        format_size(total_size, BINARY)
-    );
-
-    if !suspicious_files.is_empty() {
-        println!("\n⚠️ Potentially suspicious files detected:");
-        for file in suspicious_files {
-            println!("- {}", file);
-        }
-    }
+    results
 }
