@@ -4,3 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+sysinfo = "0.29.10"
+walkdir = "2.4.0"
+humansize = "2.1.3"
