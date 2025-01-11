@@ -448,7 +448,6 @@ fn calculate_usage_pattern(values: &[f32]) -> f64 {
         0.0
     };
 
-    // Simple trend calculation
     let mut trend = 0.0;
     for window in values.windows(2) {
         if window[1] > window[0] {
