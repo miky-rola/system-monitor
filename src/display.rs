@@ -68,6 +68,49 @@ pub fn display_system_info(sys: &System) {
              sys.cpus().len());
 }
 
+pub fn display_temp_files(metrics: &SystemMetrics) {
+    println!("\n=== Temporary Files Analysis ===");
+    println!("Total Size: {}", format_size(metrics.temp_files.total_size, BINARY));
+    println!("Total Files: {}", metrics.temp_files.files.len());
+    
+    if !metrics.temp_files.files.is_empty() {
+        println!("\nAll Temporary Files:");
+        println!("{:<10} {:<20} {}", "Size", "Last Modified", "Path");
+        println!("{:-<80}", "");
+        
+        for file in &metrics.temp_files.files {
+            let last_modified = file.last_modified
+                .map(|time| {
+                    time.duration_since(std::time::UNIX_EPOCH)
+                        .ok()
+                        .map(|d| {
+                            let secs = d.as_secs();
+                            let now = std::time::SystemTime::now()
+                                .duration_since(std::time::UNIX_EPOCH)
+                                .unwrap()
+                                .as_secs();
+                            let diff = now - secs;
+                            if diff < 3600 {
+                                format!("{}m ago", diff / 60)
+                            } else if diff < 86400 {
+                                format!("{}h ago", diff / 3600)
+                            } else {
+                                format!("{}d ago", diff / 86400)
+                            }
+                        })
+                        .unwrap_or_else(|| "unknown".to_string())
+                })
+                .unwrap_or_else(|| "unknown".to_string());
+
+            println!("{:<10} {:<20} {}", 
+                format_size(file.size, BINARY),
+                last_modified,
+                file.path
+            );
+        }
+    }
+}
+
 pub fn display_performance_analysis(metrics_history: &[SystemMetrics]) {
     println!("\n=== Performance Analysis ===");
     
@@ -91,6 +134,13 @@ pub fn display_performance_analysis(metrics_history: &[SystemMetrics]) {
     println!("Avg Throughput: ↓{}ps, ↑{}ps",
              format_size(network_trend.rx_rate as u64, BINARY),
              format_size(network_trend.tx_rate as u64, BINARY));
+
+    // Just show summary of temp files
+    let latest_metrics = metrics_history.last().unwrap();
+    println!("\nTemporary Files Summary:");
+    println!("Total Size: {}", format_size(latest_metrics.temp_files.total_size, BINARY));
+    println!("Total Files: {}", latest_metrics.temp_files.files.len());
+    println!("Use 'show-temp-files' command to view detailed listing");
 }
 
 pub fn display_security_analysis(analysis: &SecurityAnalysis) {    
@@ -116,3 +166,4 @@ pub fn display_recommendations(recommendations: &[String]) {
         println!("{}", recommendation);
     }
 }
+

@@ -2,7 +2,6 @@ use std::time::Instant;
 use std::collections::HashMap;
 use sysinfo::Pid;
 
-// all the codes giving un used code error are being used elsewhere>> avoid removing it
 pub struct SystemMetrics {
     pub timestamp: Instant,
     pub cpu_usage: Vec<f32>,
@@ -13,6 +12,18 @@ pub struct SystemMetrics {
     pub network_tx: u64,
     pub disk_usage: HashMap<String, DiskMetrics>,
     pub process_metrics: Vec<ProcessMetrics>,
+    pub temp_files: TempFileMetrics,
+}
+
+pub struct TempFileMetrics {
+    pub total_size: u64,
+    pub files: Vec<TempFileInfo>,
+}
+
+pub struct TempFileInfo {
+    pub path: String,
+    pub size: u64,
+    pub last_modified: Option<std::time::SystemTime>,
 }
 
 pub struct DiskMetrics {
