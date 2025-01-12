@@ -9,6 +9,7 @@ A comprehensive system monitoring tool written in Rust that provides detailed an
   - Memory usage and trends
   - Network activity monitoring
   - Disk usage statistics
+  - Reading temp files
 
 - **Process Analysis**
   - Detailed process resource usage
