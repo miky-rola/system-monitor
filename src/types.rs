@@ -31,8 +31,6 @@ pub struct ProcessMetrics {
 }
 
 pub struct SecurityAnalysis {
-    pub suspicious_processes: Vec<String>,
-    pub suspicious_files: Vec<String>,
     pub unusual_network_activity: Vec<String>,
     pub high_resource_usage: Vec<String>,
 }

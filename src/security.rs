@@ -6,19 +6,12 @@ use humansize::{format_size, BINARY};
 
 pub fn perform_security_analysis(sys: &System, metrics_history: &[SystemMetrics]) -> SecurityAnalysis {
     let mut analysis = SecurityAnalysis {
-        suspicious_processes: Vec::new(),
-        suspicious_files: Vec::new(),
         unusual_network_activity: Vec::new(),
         high_resource_usage: Vec::new(),
     };
 
     for process in sys.processes().values() {
         let name = process.name().to_lowercase();
-        if is_suspicious_process_name(&name) {
-            analysis.suspicious_processes.push(format!(
-                "{} (PID: {})", process.name(), process.pid()
-            ));
-        }
 
         if process.cpu_usage() > 90.0 || process.memory() > sys.total_memory() / 10 {
             analysis.high_resource_usage.push(format!(
@@ -72,19 +65,6 @@ pub fn generate_recommendations(
         ));
     }
 
-    // Security recommendations
-    if !security_analysis.suspicious_processes.is_empty() {
-        recommendations.push("* URGENT: Suspicious processes detected - Run full system scan".to_string());
-        recommendations.push("* Review and terminate suspicious processes".to_string());
-    }
-
-    if !security_analysis.suspicious_files.is_empty() {
-        recommendations.push("* Suspicious files detected:".to_string());
-        recommendations.push("  - Run antivirus scan".to_string());
-        recommendations.push("  - Check file permissions".to_string());
-        recommendations.push("  - Review recently modified files".to_string());
-    }
-
     if !security_analysis.unusual_network_activity.is_empty() {
         recommendations.push("* Unusual network activity detected - Check firewall settings".to_string());
         recommendations.push("* Monitor network connections for unauthorized access".to_string());
@@ -136,13 +116,6 @@ pub fn generate_recommendations(
     recommendations
 }
 
-fn is_suspicious_process_name(name: &str) -> bool {
-    let suspicious_patterns = [
-        "cryptominer", "miner", "malware", "suspicious",
-        "temp", "tmp", "hack", "crack", "keylog"
-    ];
-    suspicious_patterns.iter().any(|&pattern| name.contains(pattern))
-}
 
 fn calculate_network_baseline(metrics_history: &[SystemMetrics]) -> u64 {
     let total: u64 = metrics_history.iter()
