@@ -1,4 +1,6 @@
 use sysinfo::{System, SystemExt, ProcessExt, NetworkExt};
+use walkdir::WalkDir;
+use std::path::Path;
 use crate::types::{SystemMetrics, SecurityAnalysis};
 use humansize::{format_size, BINARY};
 
@@ -10,6 +12,7 @@ pub fn perform_security_analysis(sys: &System, metrics_history: &[SystemMetrics]
         high_resource_usage: Vec::new(),
     };
 
+    // Process analysis
     for process in sys.processes().values() {
         let name = process.name().to_lowercase();
         if is_suspicious_process_name(&name) {
@@ -28,6 +31,10 @@ pub fn perform_security_analysis(sys: &System, metrics_history: &[SystemMetrics]
         }
     }
 
+    // File system analysis
+    scan_suspicious_files(&mut analysis);
+
+    // Network analysis
     let network_baseline = calculate_network_baseline(metrics_history);
     for (interface, data) in sys.networks() {
         let current_throughput = data.received() + data.transmitted();
@@ -39,6 +46,77 @@ pub fn perform_security_analysis(sys: &System, metrics_history: &[SystemMetrics]
     }
 
     analysis
+}
+
+fn scan_suspicious_files(analysis: &mut SecurityAnalysis) {
+    let suspicious_extensions = [
+        ".virus", ".malware", ".ransomware", ".encrypted",
+        ".suspicious", ".backdoor", ".trojan", ".keylog"
+    ];
+    
+    let suspicious_patterns = [
+        "backdoor", "exploit", "hack", "crack", "steal",
+        "keylog", "malicious", "virus", "trojan"
+    ];
+
+    let home = std::env::var("HOME").unwrap_or_else(|_| ".".to_string());
+    let paths_to_scan = vec![
+        home,
+        "/tmp".to_string(),
+        "/var/tmp".to_string(),
+    ];
+
+    for base_path in paths_to_scan {
+        if !Path::new(&base_path).exists() {
+            continue;
+        }
+
+        for entry in WalkDir::new(&base_path)
+            .follow_links(false)
+            .max_depth(4)  // Limit depth to prevent excessive scanning
+            .into_iter()
+            .filter_map(|e| e.ok()) {
+                
+            let path = entry.path();
+            let file_name = path.file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or("");
+            let file_name_lower = file_name.to_lowercase();
+
+            // Check for suspicious file extensions
+            if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
+                if suspicious_extensions.iter().any(|&s| ext.contains(s)) {
+                    analysis.suspicious_files.push(format!(
+                        "Suspicious extension: {}", path.display()
+                    ));
+                    continue;
+                }
+            }
+
+            // Check for suspicious patterns in filename
+            if suspicious_patterns.iter().any(|&pattern| file_name_lower.contains(pattern)) {
+                analysis.suspicious_files.push(format!(
+                    "Suspicious filename: {}", path.display()
+                ));
+                continue;
+            }
+
+            // Check file permissions and ownership
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                if let Ok(metadata) = path.metadata() {
+                    let mode = metadata.permissions().mode();
+                    // Check for world-writable executables
+                    if mode & 0o111 != 0 && mode & 0o002 != 0 {
+                        analysis.suspicious_files.push(format!(
+                            "World-writable executable: {}", path.display()
+                        ));
+                    }
+                }
+            }
+        }
+    }
 }
 
 pub fn generate_recommendations(
@@ -75,6 +153,13 @@ pub fn generate_recommendations(
         recommendations.push("* Review and terminate suspicious processes".to_string());
     }
 
+    if !security_analysis.suspicious_files.is_empty() {
+        recommendations.push("* Suspicious files detected:".to_string());
+        recommendations.push("  - Run antivirus scan".to_string());
+        recommendations.push("  - Check file permissions".to_string());
+        recommendations.push("  - Review recently modified files".to_string());
+    }
+
     if !security_analysis.unusual_network_activity.is_empty() {
         recommendations.push("* Unusual network activity detected - Check firewall settings".to_string());
         recommendations.push("* Monitor network connections for unauthorized access".to_string());
@@ -83,7 +168,7 @@ pub fn generate_recommendations(
     // Browser recommendations
     let process_metrics = &last_metrics.process_metrics;
     let browser_processes: Vec<_> = process_metrics.iter()
-        .filter(|p| p.name.contains("chrome") || p.name.contains("firefox") || p.name.contains("msedge") || p.name.contains("safari"))
+        .filter(|p| p.name.contains("chrome") || p.name.contains("firefox") || p.name.contains("msedge"))
         .collect();
 
     if browser_processes.iter().any(|p| p.memory_usage > 1024 * 1024 * 1024) {
@@ -97,6 +182,7 @@ pub fn generate_recommendations(
     recommendations.push("  - Update system and application software".to_string());
     recommendations.push("  - Run disk cleanup and defragmentation".to_string());
     recommendations.push("  - Monitor system performance over time".to_string());
+    recommendations.push("  - Regularly scan for suspicious files".to_string());
 
     recommendations
 }
