@@ -134,6 +134,7 @@ cargo build
 
 - [sysinfo](https://crates.io/crates/sysinfo) - System information gathering
 - [humansize](https://crates.io/crates/humansize) - Human-readable size formatting
+- [walkdir](https://crates.io/crates/walkdir)- scanning
 
 ## Contact
 
