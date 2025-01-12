@@ -1,6 +1,6 @@
 use sysinfo::{System, SystemExt, ProcessExt, NetworkExt};
-use walkdir::WalkDir;
-use std::path::Path;
+// use walkdir::WalkDir;
+// use std::path::Path;
 use crate::types::{SystemMetrics, SecurityAnalysis};
 use humansize::{format_size, BINARY};
 
@@ -11,7 +11,7 @@ pub fn perform_security_analysis(sys: &System, metrics_history: &[SystemMetrics]
     };
 
     for process in sys.processes().values() {
-        let name = process.name().to_lowercase();
+        // let name = process.name().to_lowercase();
 
         if process.cpu_usage() > 90.0 || process.memory() > sys.total_memory() / 10 {
             analysis.high_resource_usage.push(format!(
