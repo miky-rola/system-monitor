@@ -76,7 +76,6 @@ Core 0: 45.2% avg, Pattern: Moderate
   - Monitor system performance over time
 ```
 ## Example outputs
-## Example outputs
 ![System Monitor Screenshot 1](https://res.cloudinary.com/dxbz61zly/image/upload/v1736711345/Screenshot_2025-01-12_193745_nmffv9.png)
 
 ![System Monitor Screenshot 2](https://res.cloudinary.com/dxbz61zly/image/upload/v1736711377/Screenshot_2025-01-12_194048_jofbyg.png)
