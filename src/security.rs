@@ -83,7 +83,6 @@ fn scan_suspicious_files(analysis: &mut SecurityAnalysis) {
                 .unwrap_or("");
             let file_name_lower = file_name.to_lowercase();
 
-            // Check for suspicious file extensions
             if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
                 if suspicious_extensions.iter().any(|&s| ext.contains(s)) {
                     analysis.suspicious_files.push(format!(
@@ -93,7 +92,6 @@ fn scan_suspicious_files(analysis: &mut SecurityAnalysis) {
                 }
             }
 
-            // Check for suspicious patterns in filename
             if suspicious_patterns.iter().any(|&pattern| file_name_lower.contains(pattern)) {
                 analysis.suspicious_files.push(format!(
                     "Suspicious filename: {}", path.display()
@@ -101,7 +99,21 @@ fn scan_suspicious_files(analysis: &mut SecurityAnalysis) {
                 continue;
             }
 
-            // Check file permissions and ownership
+            #[cfg(windows)]
+            {
+                use std::os::windows::fs::MetadataExt;
+                if let Ok(metadata) = path.metadata() {
+                    let attributes = metadata.file_attributes();
+                    // >>>Check for potentially suspicious Windows file attributes
+                    if attributes & 0x0002 != 0 {  // FILE_ATTRIBUTE_HIDDEN
+                        analysis.suspicious_files.push(format!(
+                            "Hidden file: {}", path.display()
+                        ));
+                    }
+                }
+            }
+            // Check file permissions and ownership(>>I added this for unix operating systems)
+            // so it's needed to add  #[cfg(unix)] to it
             #[cfg(unix)]
             {
                 use std::os::unix::fs::PermissionsExt;
