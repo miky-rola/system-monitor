@@ -12,7 +12,6 @@ pub fn perform_security_analysis(sys: &System, metrics_history: &[SystemMetrics]
         high_resource_usage: Vec::new(),
     };
 
-    // Process analysis
     for process in sys.processes().values() {
         let name = process.name().to_lowercase();
         if is_suspicious_process_name(&name) {
@@ -31,10 +30,8 @@ pub fn perform_security_analysis(sys: &System, metrics_history: &[SystemMetrics]
         }
     }
 
-    // File system analysis
     scan_suspicious_files(&mut analysis);
 
-    // Network analysis
     let network_baseline = calculate_network_baseline(metrics_history);
     for (interface, data) in sys.networks() {
         let current_throughput = data.received() + data.transmitted();
@@ -73,7 +70,7 @@ fn scan_suspicious_files(analysis: &mut SecurityAnalysis) {
 
         for entry in WalkDir::new(&base_path)
             .follow_links(false)
-            .max_depth(4)  // Limit depth to prevent excessive scanning
+            .max_depth(4)  // Limited the depth to prevent excessive scanning
             .into_iter()
             .filter_map(|e| e.ok()) {
                 

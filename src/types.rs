@@ -2,7 +2,7 @@ use std::time::Instant;
 use std::collections::HashMap;
 use sysinfo::Pid;
 
-// all the codes giving un used import error are being used elsewhere>> avoid removing it
+// all the codes giving un used code error are being used elsewhere>> avoid removing it
 pub struct SystemMetrics {
     pub timestamp: Instant,
     pub cpu_usage: Vec<f32>,
