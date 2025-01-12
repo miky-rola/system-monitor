@@ -114,6 +114,7 @@ fn scan_suspicious_files(analysis: &mut SecurityAnalysis) {
             }
             // Check file permissions and ownership(>>I added this for unix operating systems)
             // so it's needed to add  #[cfg(unix)] to it
+            // if you dont understand you can read more: https://rust-analyzer.github.io/manual.html#inactive-code
             #[cfg(unix)]
             {
                 use std::os::unix::fs::PermissionsExt;
@@ -180,9 +181,33 @@ pub fn generate_recommendations(
     // Browser recommendations
     let process_metrics = &last_metrics.process_metrics;
     let browser_processes: Vec<_> = process_metrics.iter()
-        .filter(|p| p.name.contains("chrome") || p.name.contains("firefox") || p.name.contains("msedge"))
-        .collect();
-
+    .filter(|p| {
+        let name = p.name.to_lowercase();
+        name.contains("chrome") || 
+        name.contains("chromium") ||
+        name.contains("firefox") || 
+        name.contains("librewolf") ||
+        name.contains("waterfox") ||
+        name.contains("msedge") || 
+        name.contains("edge") ||
+        name.contains("safari") ||
+        name.contains("opera") ||
+        name.contains("brave") ||
+        name.contains("vivaldi") ||
+        name.contains("tor") ||
+        name.contains("palemoon") ||
+        name.contains("seamonkey") ||
+        name.contains("falkon") ||
+        name.contains("konqueror") ||
+        name.contains("epiphany") ||
+        name.contains("midori") ||
+        name.contains("qutebrowser") ||
+        name.contains("iexplore") ||  // Internet Explorer
+        name.contains("maxthon") ||
+        name.contains("whale") ||     // Naver Whale
+        name.contains("yandex")       // Yandex Browser
+    })
+    .collect();
     if browser_processes.iter().any(|p| p.memory_usage > 1024 * 1024 * 1024) {
         recommendations.push("* Browser memory usage is high:".to_string());
         recommendations.push("  - Consider reducing number of open tabs".to_string());
