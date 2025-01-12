@@ -103,15 +103,7 @@ pub fn generate_recommendations(
     if browser_processes.iter().any(|p| p.memory_usage > 1024 * 1024 * 1024) {
         recommendations.push("* Browser memory usage is high:".to_string());
         recommendations.push("  - Consider reducing number of open tabs".to_string());
-        recommendations.push("  - Check browser extensions for memory leaks".to_string());
     }
-
-    // General maintenance recommendations
-    recommendations.push("* Schedule regular system maintenance:".to_string());
-    recommendations.push("  - Update system and application software".to_string());
-    recommendations.push("  - Run disk cleanup and defragmentation".to_string());
-    recommendations.push("  - Monitor system performance over time".to_string());
-    recommendations.push("  - Regularly scan for suspicious files".to_string());
 
     recommendations
 }
