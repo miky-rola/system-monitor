@@ -1,7 +1,6 @@
 use std::time::Duration;
 use std::thread;
-use sysinfo::System;
-use sysinfo::SystemExt;
+use sysinfo::{System, SystemExt};
 mod metrics;
 mod analysis;
 mod display;
