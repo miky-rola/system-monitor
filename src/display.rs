@@ -96,12 +96,6 @@ pub fn display_performance_analysis(metrics_history: &[SystemMetrics]) {
 pub fn display_security_analysis(analysis: &SecurityAnalysis) {
     println!("\n=== Security Analysis ===");
     
-    if !analysis.suspicious_processes.is_empty() {
-        println!("\nSuspicious Processes:");
-        for process in &analysis.suspicious_processes {
-            println!("- {}", process);
-        }
-    }
 
     if !analysis.unusual_network_activity.is_empty() {
         println!("\nUnusual Network Activity:");
