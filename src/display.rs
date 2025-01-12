@@ -93,9 +93,7 @@ pub fn display_performance_analysis(metrics_history: &[SystemMetrics]) {
              format_size(network_trend.tx_rate as u64, BINARY));
 }
 
-pub fn display_security_analysis(analysis: &SecurityAnalysis) {
-    println!("\n=== Security Analysis ===");
-    
+pub fn display_security_analysis(analysis: &SecurityAnalysis) {    
 
     if !analysis.unusual_network_activity.is_empty() {
         println!("\nUnusual Network Activity:");

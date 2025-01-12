@@ -105,6 +105,7 @@ pub fn generate_recommendations(
         recommendations.push("  - Consider reducing number of open tabs".to_string());
     }
 
+
     recommendations
 }
 

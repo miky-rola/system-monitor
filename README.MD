@@ -69,18 +69,16 @@ CPU Usage Trends:
 Core 0: 45.2% avg, Pattern: Moderate
 ...
 
-=== Security Analysis ===
-Suspicious Processes:
-- process1 (PID: 1234)
-...
 
 === System Recommendations ===
 * Schedule regular system maintenance:
   - Update system and application software
-  - Run disk cleanup and defragmentation
   - Monitor system performance over time
 ```
+## Example outputs
+(https://res.cloudinary.com/dxbz61zly/image/upload/v1736711345/Screenshot_2025-01-12_193745_nmffv9.png)
 
+(https://res.cloudinary.com/dxbz61zly/image/upload/v1736711377/Screenshot_2025-01-12_194048_jofbyg.png)
 ## Project Structure
 
 ```
