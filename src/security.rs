@@ -30,8 +30,6 @@ pub fn perform_security_analysis(sys: &System, metrics_history: &[SystemMetrics]
         }
     }
 
-    scan_suspicious_files(&mut analysis);
-
     let network_baseline = calculate_network_baseline(metrics_history);
     for (interface, data) in sys.networks() {
         let current_throughput = data.received() + data.transmitted();
@@ -45,89 +43,6 @@ pub fn perform_security_analysis(sys: &System, metrics_history: &[SystemMetrics]
     analysis
 }
 
-fn scan_suspicious_files(analysis: &mut SecurityAnalysis) {
-    let suspicious_extensions = [
-        ".virus", ".malware", ".ransomware", ".encrypted",
-        ".suspicious", ".backdoor", ".trojan", ".keylog"
-    ];
-    
-    let suspicious_patterns = [
-        "backdoor", "exploit", "hack", "crack", "steal",
-        "keylog", "malicious", "virus", "trojan"
-    ];
-
-    let home = std::env::var("HOME").unwrap_or_else(|_| ".".to_string());
-    let paths_to_scan = vec![
-        home,
-        "/tmp".to_string(),
-        "/var/tmp".to_string(),
-    ];
-
-    for base_path in paths_to_scan {
-        if !Path::new(&base_path).exists() {
-            continue;
-        }
-
-        for entry in WalkDir::new(&base_path)
-            .follow_links(false)
-            .max_depth(4)  // Limited the depth to prevent excessive scanning
-            .into_iter()
-            .filter_map(|e| e.ok()) {
-                
-            let path = entry.path();
-            let file_name = path.file_name()
-                .and_then(|n| n.to_str())
-                .unwrap_or("");
-            let file_name_lower = file_name.to_lowercase();
-
-            if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
-                if suspicious_extensions.iter().any(|&s| ext.contains(s)) {
-                    analysis.suspicious_files.push(format!(
-                        "Suspicious extension: {}", path.display()
-                    ));
-                    continue;
-                }
-            }
-
-            if suspicious_patterns.iter().any(|&pattern| file_name_lower.contains(pattern)) {
-                analysis.suspicious_files.push(format!(
-                    "Suspicious filename: {}", path.display()
-                ));
-                continue;
-            }
-
-            #[cfg(windows)]
-            {
-                use std::os::windows::fs::MetadataExt;
-                if let Ok(metadata) = path.metadata() {
-                    let attributes = metadata.file_attributes();
-                    // >>>Check for potentially suspicious Windows file attributes
-                    if attributes & 0x0002 != 0 {  // FILE_ATTRIBUTE_HIDDEN
-                        analysis.suspicious_files.push(format!(
-                            "Hidden file: {}", path.display()
-                        ));
-                    }
-                }
-            }
-            // Check file permissions and ownership(>>I added this for unix operating systems)
-            // so it's needed to add  #[cfg(unix)] to it
-            // if you dont understand you can read more: https://rust-analyzer.github.io/manual.html#inactive-code
-            #[cfg(unix)]
-            {
-                use std::os::unix::fs::PermissionsExt;
-                if let Ok(metadata) = path.metadata() {
-                    let mode = metadata.permissions().mode();
-                    // Check for world-writable executables
-                    if mode & 0o111 != 0 && mode & 0o002 != 0 {
-                        analysis.suspicious_files.push(format!(
-                            "World-writable executable: {}", path.display()
-                        ));
-                    }
-                }
-            }
-        }
-    }
-}
 
 pub fn generate_recommendations(
     metrics_history: &[SystemMetrics],
