@@ -1,6 +1,7 @@
 use sysinfo::{System, SystemExt, ProcessExt};
 use crate::types::{SystemMetrics, SecurityAnalysis};
 use humansize::{format_size, BINARY};
+use sysinfo::NetworkExt;
 
 pub fn perform_security_analysis(sys: &System, metrics_history: &[SystemMetrics]) -> SecurityAnalysis {
     let mut analysis = SecurityAnalysis {
