@@ -16,10 +16,8 @@ A comprehensive system monitoring tool written in Rust that provides detailed an
   - Memory and CPU usage tracking
 
 - **Security Analysis**
-  - Suspicious process detection
   - Unusual network activity monitoring
   - Resource usage anomaly detection
-  - Security recommendations
 
 - **Performance Analysis**
   - CPU usage trends and patterns
