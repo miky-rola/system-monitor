@@ -83,7 +83,7 @@ pub fn generate_recommendations(
     // Browser recommendations
     let process_metrics = &last_metrics.process_metrics;
     let browser_processes: Vec<_> = process_metrics.iter()
-        .filter(|p| p.name.contains("chrome") || p.name.contains("firefox") || p.name.contains("msedge"))
+        .filter(|p| p.name.contains("chrome") || p.name.contains("firefox") || p.name.contains("msedge") || p.name.contains("safari"))
         .collect();
 
     if browser_processes.iter().any(|p| p.memory_usage > 1024 * 1024 * 1024) {
