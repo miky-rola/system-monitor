@@ -14,7 +14,7 @@ use security::{perform_security_analysis, generate_recommendations};
 fn main() {
     println!("Advanced System Performance Monitor Starting...\n");
     
-    let mut sys = System::new_all();
+    // let mut sys = System::new_all();
     let mut metrics_history = Vec::new();
     let monitoring_duration = Duration::from_secs(30);
     let sample_interval = Duration::from_secs(5);

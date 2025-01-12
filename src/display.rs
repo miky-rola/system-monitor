@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::io::Write;
 use sysinfo::{System, SystemExt, ProcessExt, CpuExt};
 use humansize::{format_size, BINARY};
 use crate::types::{SystemMetrics, SecurityAnalysis};

@@ -2,12 +2,13 @@ use std::time::Instant;
 use std::collections::HashMap;
 use sysinfo::Pid;
 
+// all the codes giving un used import error are being used elsewhere>> avoid removing it
 pub struct SystemMetrics {
     pub timestamp: Instant,
     pub cpu_usage: Vec<f32>,
     pub memory_usage: u64,
     pub memory_total: u64,
-    pub swap_usage: u64,
+    pub swap_usage: u64, 
     pub network_rx: u64,
     pub network_tx: u64,
     pub disk_usage: HashMap<String, DiskMetrics>,
