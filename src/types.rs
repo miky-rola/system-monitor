@@ -56,3 +56,9 @@ pub struct NetworkTrend {
     pub rx_rate: f64,
     pub tx_rate: f64,
 }
+
+pub struct TemperatureMetrics {
+    pub cpu_temp: Option<f32>,
+    pub gpu_temp: Option<f32>,
+    pub components: HashMap<String, f32>,
+}
