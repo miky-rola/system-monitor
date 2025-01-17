@@ -13,6 +13,7 @@ pub struct SystemMetrics {
     pub disk_usage: HashMap<String, DiskMetrics>,
     pub process_metrics: Vec<ProcessMetrics>,
     pub temp_files: TempFileMetrics,
+    pub temperature: TemperatureMetrics,
 }
 
 pub struct TempFileMetrics {

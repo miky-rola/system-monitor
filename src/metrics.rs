@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::fs;
-use sysinfo::{System, SystemExt, ProcessExt, DiskExt, CpuExt, NetworkExt, NetworksExt};
+use sysinfo::{System, SystemExt, ProcessExt, DiskExt, CpuExt, NetworkExt, NetworksExt, ComponentExt};
 use crate::types::{SystemMetrics, DiskMetrics, ProcessMetrics, TempFileMetrics, TempFileInfo};
 use walkdir::WalkDir;
 
@@ -95,4 +95,30 @@ fn collect_process_metrics(sys: &System) -> Vec<ProcessMetrics> {
             disk_usage: 0,
         })
         .collect()
+}
+
+fn collect_temperature_metrics(sys: &System) -> TemperatureMetrics {
+    let mut components = HashMap::new();
+    
+    for component in sys.components() {
+        components.insert(
+            component.label().to_string(),
+            component.temperature()
+        );
+    }
+
+    // Try to identify CPU and GPU temperatures from components
+    let cpu_temp = components.iter()
+        .find(|(label, _)| label.to_lowercase().contains("cpu"))
+        .map(|(_, &temp)| temp);
+        
+    let gpu_temp = components.iter()
+        .find(|(label, _)| label.to_lowercase().contains("gpu"))
+        .map(|(_, &temp)| temp);
+
+    TemperatureMetrics {
+        cpu_temp,
+        gpu_temp,
+        components,
+    }
 }
