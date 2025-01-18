@@ -73,7 +73,7 @@ fn main() {
             let temp_paths: Vec<&Path> = vec![
                 temp_dir.as_path(),
                 Path::new("/tmp"),
-                Path::new("/var/tmp"),*
+                Path::new("/var/tmp"),
             ];
             let stats = delete_temp_files(
                 &temp_paths,
