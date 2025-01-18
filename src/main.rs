@@ -69,14 +69,15 @@ fn main() {
         },
         Some("clean-temp") => {
             println!("\nCleaning temporary files...");
+            let temp_dir = std::env::temp_dir();
             let temp_paths: Vec<&Path> = vec![
-                std::env::temp_dir().as_path(),
+                temp_dir.as_path(),
                 Path::new("/tmp"),
                 Path::new("/var/tmp"),
             ];
             let stats = delete_temp_files(
                 &temp_paths,
-                Some(7) // Delete files older than 7 days
+                Some(2) // Delete files older than 7 days
             );
             println!("\nCleanup Results:");
             println!("Files Deleted: {}", stats.files_deleted);

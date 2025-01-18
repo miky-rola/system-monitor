@@ -1,4 +1,4 @@
-use crate::types::{SystemMetrics, UsageTrend, NetworkTrend};
+use crate::types::{SystemMetrics, UsageTrend, NetworkTrend, };
 
 pub fn analyze_cpu_trend(metrics_history: &[SystemMetrics]) -> Vec<UsageTrend> {
     let cpu_count = metrics_history[0].cpu_usage.len();
