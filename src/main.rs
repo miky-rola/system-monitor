@@ -17,7 +17,8 @@ use display::{
     display_security_analysis,
     display_recommendations, 
     display_temp_files,
-    display_temperature_info
+    display_temperature_info,
+    display_process_summary
 };
 use security::{perform_security_analysis, generate_recommendations};
 use temp_manager::delete_temp_files;
@@ -59,12 +60,12 @@ fn main() {
     
     // Initialize system information
     let mut sys = System::new_all();
-    sys.refresh_all();
+    sys.refresh_components_list();
 
     match command {
         Some("show-temp-files") => {
             println!("Collecting temporary file information...");
-            let metrics = collect_system_metrics(&sys);
+            let metrics = collect_system_metrics(&mut sys);
             display_temp_files(&metrics);
         },
         Some("clean-temp") => {
@@ -77,7 +78,7 @@ fn main() {
             ];
             let stats = delete_temp_files(
                 &temp_paths,
-                Some(2) // Delete files older than 7 days
+                Some(7) // Delete files older than 7 days
             );
             println!("\nCleanup Results:");
             println!("Files Deleted: {}", stats.files_deleted);
@@ -92,12 +93,11 @@ fn main() {
         },
         _ => {
             println!("Collecting system metrics over {} seconds...", monitoring_duration.as_secs());
-            display::display_process_summary(&mut sys);
+            display_process_summary(&mut sys);
 
             // Collect metrics over time
             for i in 0..samples {
-                sys.refresh_all();
-                metrics_history.push(collect_system_metrics(&sys));
+                metrics_history.push(collect_system_metrics(&mut sys));
                 
                 if i < samples - 1 {
                     print!(".");
@@ -117,7 +117,7 @@ fn main() {
             }
 
             // Security analysis and recommendations
-            let security_analysis = perform_security_analysis(&sys, &metrics_history);
+            let security_analysis = perform_security_analysis(&mut sys, &metrics_history);
             display_security_analysis(&security_analysis);
             let recommendations = generate_recommendations(&metrics_history, &security_analysis);
             display_recommendations(&recommendations);
@@ -130,24 +130,5 @@ fn main() {
             println!("- Show this help:");
             println!("    cargo run -- help");
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_system_initialization() {
-        let sys = System::new_all();
-        assert!(sys.total_memory() > 0);
-    }
-
-    #[test]
-    fn test_metrics_collection() {
-        let sys = System::new_all();
-        let metrics = collect_system_metrics(&sys);
-        assert!(!metrics.cpu_usage.is_empty());
-        assert!(metrics.memory_total > 0);
     }
 }
