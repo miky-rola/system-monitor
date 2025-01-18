@@ -68,6 +68,8 @@ fn collect_temperature_metrics(sys: &mut System) -> TemperatureMetrics {
             component.label().to_string(),
             create_temp_reading(component.temperature())
         );
+    println!("{:?}", component);
+
     }
 
     let cpu_temp = components.iter()
