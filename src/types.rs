@@ -1,3 +1,6 @@
+use std::collections::HashMap;
+use std::time::{SystemTime, Instant};
+
 #[derive(Clone)]
 pub struct TemperatureReading {
     pub celsius: f32,
@@ -10,11 +13,8 @@ pub struct TemperatureMetrics {
     pub components: HashMap<String, TemperatureReading>,
 }
 
-// Add missing imports at the top
-use std::collections::HashMap;
-use std::time::{SystemTime, Instant};
 
-// Rest of your existing types...
+
 pub struct SystemMetrics {
     pub timestamp: Instant,
     pub cpu_usage: Vec<f32>,
@@ -58,4 +58,16 @@ pub struct TempFileInfo {
 pub struct SecurityAnalysis {
     pub unusual_network_activity: Vec<String>,
     pub high_resource_usage: Vec<String>,
+}
+
+
+pub struct UsageTrend {
+    pub average: f64,
+    pub peak: f64,
+    pub pattern: f64,
+}
+
+pub struct NetworkTrend {
+    pub rx_rate: f64,
+    pub tx_rate: f64,
 }
