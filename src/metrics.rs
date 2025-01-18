@@ -109,8 +109,11 @@ fn create_temp_reading(celsius: f32) -> TemperatureReading {
     }
 }
 
-fn collect_temperature_metrics(sys: &System) -> TemperatureMetrics {
+fn collect_temperature_metrics(sys: &mut System) -> TemperatureMetrics {
     let mut components = HashMap::new();
+    
+    // Refresh components to get latest temperature readings
+    sys.refresh_components();
     
     for component in sys.components() {
         components.insert(
@@ -119,7 +122,6 @@ fn collect_temperature_metrics(sys: &System) -> TemperatureMetrics {
         );
     }
 
-    // Try to identify CPU and GPU temperatures from components
     let cpu_temp = components.iter()
         .find(|(label, _)| label.to_lowercase().contains("cpu"))
         .map(|(_, temp)| temp.clone());
