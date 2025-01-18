@@ -17,6 +17,7 @@ pub fn collect_system_metrics(sys: &System) -> SystemMetrics {
         disk_usage: collect_disk_metrics(sys),
         process_metrics: collect_process_metrics(sys),
         temp_files: collect_temp_metrics(),
+        temperature: collect_temperature_metrics(sys),
     }
 }
 
@@ -97,24 +98,35 @@ fn collect_process_metrics(sys: &System) -> Vec<ProcessMetrics> {
         .collect()
 }
 
+fn celsius_to_fahrenheit(celsius: f32) -> f32 {
+    (celsius * 9.0 / 5.0) + 32.0
+}
+
+fn create_temp_reading(celsius: f32) -> TemperatureReading {
+    TemperatureReading {
+        celsius,
+        fahrenheit: celsius_to_fahrenheit(celsius),
+    }
+}
+
 fn collect_temperature_metrics(sys: &System) -> TemperatureMetrics {
     let mut components = HashMap::new();
     
     for component in sys.components() {
         components.insert(
             component.label().to_string(),
-            component.temperature()
+            create_temp_reading(component.temperature())
         );
     }
 
     // Try to identify CPU and GPU temperatures from components
     let cpu_temp = components.iter()
         .find(|(label, _)| label.to_lowercase().contains("cpu"))
-        .map(|(_, &temp)| temp);
+        .map(|(_, temp)| temp.clone());
         
     let gpu_temp = components.iter()
         .find(|(label, _)| label.to_lowercase().contains("gpu"))
-        .map(|(_, &temp)| temp);
+        .map(|(_, temp)| temp.clone());
 
     TemperatureMetrics {
         cpu_temp,

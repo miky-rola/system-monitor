@@ -167,3 +167,42 @@ pub fn display_recommendations(recommendations: &[String]) {
     }
 }
 
+pub fn display_temperature_info(metrics: &SystemMetrics) {
+    println!("\n=== Temperature Information ===");
+    
+    if let Some(cpu_temp) = &metrics.temperature.cpu_temp {
+        println!("CPU Temperature: {:.1}°C / {:.1}°F", 
+            cpu_temp.celsius, 
+            cpu_temp.fahrenheit
+        );
+    }
+    
+    if let Some(gpu_temp) = &metrics.temperature.gpu_temp {
+        println!("GPU Temperature: {:.1}°C / {:.1}°F", 
+            gpu_temp.celsius, 
+            gpu_temp.fahrenheit
+        );
+    }
+    
+    if !metrics.temperature.components.is_empty() {
+        println!("\nAll Components:");
+        for (label, temp) in &metrics.temperature.components {
+            println!("{}: {:.1}°C / {:.1}°F", 
+                label, 
+                temp.celsius, 
+                temp.fahrenheit
+            );
+        }
+    }
+
+    // Add temperature warnings if needed
+    for (label, temp) in &metrics.temperature.components {
+        if temp.celsius > 80.0 {
+            println!("\n⚠️ WARNING: {} temperature is high ({:.1}°C / {:.1}°F)", 
+                label, 
+                temp.celsius, 
+                temp.fahrenheit
+            );
+        }
+    }
+}
