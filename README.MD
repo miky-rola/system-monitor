@@ -9,22 +9,27 @@ A comprehensive system monitoring tool written in Rust that provides detailed an
   - Memory usage and trends
   - Network activity monitoring
   - Disk usage statistics
-  - Reading temp files
+  - Temperature monitoring for CPU, GPU, and other components
+  - Temporary file analysis and management
 
 - **Process Analysis**
   - Detailed process resource usage
   - Process grouping by name
   - Memory and CPU usage tracking
+  - Browser memory analysis
 
 - **Security Analysis**
   - Unusual network activity monitoring
   - Resource usage anomaly detection
+  - High CPU/Memory usage alerts
+  - Browser resource monitoring
 
 - **Performance Analysis**
   - CPU usage trends and patterns
   - Memory usage patterns
   - Network throughput analysis
   - System resource utilization trends
+  - Temperature trend analysis
 
 ## Requirements
 
@@ -51,12 +56,29 @@ cargo build --release
 
 ## Usage
 
-Simply run the program and it will:
-1. Display current process resource usage
-2. Collect system metrics for 30 seconds
-3. Analyze system performance
-4. Provide security analysis
-5. Generate system recommendations
+### Basic Monitoring
+Run without arguments to start comprehensive system monitoring:
+```bash
+cargo run
+```
+
+### Available Commands
+```bash
+cargo run -- [command]
+
+Commands:
+  help            - Show help message
+  show-temp-files - Display detailed temporary file information
+  clean-temp      - Clean temporary files with age selection
+  monitor         - Run continuous monitoring (default)
+```
+
+### Temporary File Management
+The clean-temp command now offers interactive age selection:
+- Recent files (1-2 days old)
+- Moderately old files (3-5 days old)
+- Old files (6+ days old)
+- Option to cancel cleanup
 
 Example output:
 ```
@@ -68,14 +90,21 @@ CPUs: 8 (Physical), 16 (Logical)
 === Performance Analysis ===
 CPU Usage Trends:
 Core 0: 45.2% avg, Pattern: Moderate
-...
+Memory Usage:
+Average: 8.2 GB
+Peak: 12.1 GB
+Pattern: Moderate
 
+=== Temperature Information ===
+CPU Temperature: 65.0°C / 149.0°F
+GPU Temperature: 71.2°C / 160.2°F
 
 === System Recommendations ===
-* Schedule regular system maintenance:
-  - Update system and application software
-  - Monitor system performance over time
+* Schedule regular system maintenance
+* Monitor browser memory usage
+* Check high temperature components
 ```
+
 ## Example outputs
 ![System Monitor Screenshot 1](https://res.cloudinary.com/dxbz61zly/image/upload/v1736711345/Screenshot_2025-01-12_193745_nmffv9.png)
 
@@ -90,7 +119,8 @@ src/
 ├── metrics.rs      # System metrics collection
 ├── analysis.rs     # Data analysis
 ├── security.rs     # Security analysis
-└── display.rs      # Output formatting and display
+├── display.rs      # Output formatting and display
+└── temp_manager.rs # Temporary file management
 ```
 
 ## Configuration
@@ -101,6 +131,7 @@ The monitor runs with the following default settings:
 - CPU usage threshold: 90%
 - Memory usage threshold: 80%
 - Network baseline: 2x average throughput
+- Temperature warning threshold: 80°C
 
 ## Development
 
@@ -118,8 +149,6 @@ cd system-monitor
 cargo build
 ```
 
-
-
 ## Contributing
 
 1. Fork the repository
@@ -128,13 +157,13 @@ cargo build
 4. Push to branch: `git push origin feature-name`
 5. Submit a Pull Request
 
-## Acknowledgments
+## Dependencies
 
 - [sysinfo](https://crates.io/crates/sysinfo) - System information gathering
 - [humansize](https://crates.io/crates/humansize) - Human-readable size formatting
-- [walkdir](https://crates.io/crates/walkdir)- scanning
+- [walkdir](https://crates.io/crates/walkdir) - Directory traversal for temp file management
 
 ## Contact
 
 Miky Rola - mikyrola8@gmail.com
-Project Link:https://github.com/miky-rola/system-monitor
+Project Link: https://github.com/miky-rola/system-monitor
