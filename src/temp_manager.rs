@@ -9,7 +9,7 @@ pub struct TempCleanupStats {
     pub errors: Vec<String>,
 }
 
-pub fn delete_temp_files(paths: &[&Path], older_than_days: Option<u64>) -> TempCleanupStats {
+pub fn delete_temp_files(paths: &[&Path], min_days_old: u64) -> TempCleanupStats {
     let mut stats = TempCleanupStats {
         files_deleted: 0,
         bytes_freed: 0,
@@ -34,28 +34,32 @@ pub fn delete_temp_files(paths: &[&Path], older_than_days: Option<u64>) -> TempC
                     continue;
                 }
 
-                // Check file age if specified
-                if let Some(days) = older_than_days {
-                    if let Ok(modified) = metadata.modified() {
-                        if let Ok(duration) = current_time.duration_since(modified) {
-                            if duration.as_secs() < days * 86400 {
-                                continue;
+                // Check file age
+                if let Ok(modified) = metadata.modified() {
+                    if let Ok(duration) = current_time.duration_since(modified) {
+                        let days_old = duration.as_secs() / 86400;
+                        
+                        // Filter based on age ranges
+                        match min_days_old {
+                            2 => if !(1..=2).contains(&days_old) { continue; },
+                            5 => if !(3..=5).contains(&days_old) { continue; },
+                            6 => if days_old < 6 { continue; },
+                            _ => continue,
+                        }
+
+                        match fs::remove_file(entry.path()) {
+                            Ok(_) => {
+                                stats.files_deleted += 1;
+                                stats.bytes_freed += metadata.len();
+                            },
+                            Err(e) => {
+                                stats.errors.push(format!(
+                                    "Failed to delete {}: {}",
+                                    entry.path().display(),
+                                    e
+                                ));
                             }
                         }
-                    }
-                }
-
-                match fs::remove_file(entry.path()) {
-                    Ok(_) => {
-                        stats.files_deleted += 1;
-                        stats.bytes_freed += metadata.len();
-                    },
-                    Err(e) => {
-                        stats.errors.push(format!(
-                            "Failed to delete {}: {}",
-                            entry.path().display(),
-                            e
-                        ));
                     }
                 }
             }

@@ -107,6 +107,11 @@ fn main() {
             display_temp_files(&metrics);
         },
         Some("clean-temp") => {
+            let days_threshold = match prompt_temp_file_age() {
+                Some(days) => days,
+                None => return,
+            };
+        
             println!("\nCleaning temporary files...");
             let temp_dir = std::env::temp_dir();
             let temp_paths: Vec<&Path> = vec![
@@ -114,10 +119,12 @@ fn main() {
                 Path::new("/tmp"),
                 Path::new("/var/tmp"),
             ];
+            
             let stats = delete_temp_files(
                 &temp_paths,
-                Some(7) // Delete files older than 7 days
+                days_threshold
             );
+            
             println!("\nCleanup Results:");
             println!("Files Deleted: {}", stats.files_deleted);
             println!("Space Freed: {}", format_size(stats.bytes_freed, BINARY));
