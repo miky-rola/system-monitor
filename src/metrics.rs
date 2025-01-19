@@ -16,7 +16,7 @@ pub fn collect_system_metrics(sys: &mut System) -> SystemMetrics {
         disk_usage: collect_disk_metrics(sys),
         process_metrics: collect_process_metrics(sys),
         temp_files: collect_temp_metrics(),
-        temperature: collect_temperature_metrics(sys),  // This will now work with &mut sys
+        temperature: collect_temperature_metrics(sys),  
     }
 }
 
