@@ -83,7 +83,6 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     let command = args.get(1).map(|s| s.as_str());
 
-    // Handle help command first
     if matches!(command, Some("help") | Some("-h") | Some("--help")) {
         print_help();
         return;
@@ -96,7 +95,6 @@ fn main() {
     let sample_interval = Duration::from_secs(5);
     let samples = (monitoring_duration.as_secs() / sample_interval.as_secs()) as usize;
     
-    // Initialize system information
     let mut sys = System::new_all();
     sys.refresh_components_list();
 
@@ -152,16 +150,13 @@ fn main() {
             }
             println!("\n");
 
-            // Display comprehensive system analysis
             display_system_info(&sys);
             display_performance_analysis(&metrics_history);
             
-            // Display temperature information
             if let Some(last_metrics) = metrics_history.last() {
                 display_temperature_info(last_metrics);
             }
 
-            // Security analysis and recommendations
             let security_analysis = perform_security_analysis(&mut sys, &metrics_history);
             display_security_analysis(&security_analysis);
             let recommendations = generate_recommendations(&metrics_history, &security_analysis);
