@@ -34,12 +34,10 @@ pub fn delete_temp_files(paths: &[&Path], min_days_old: u64) -> TempCleanupStats
                     continue;
                 }
 
-                // Check file age
                 if let Ok(modified) = metadata.modified() {
                     if let Ok(duration) = current_time.duration_since(modified) {
                         let days_old = duration.as_secs() / 86400;
                         
-                        // Filter based on age ranges
                         match min_days_old {
                             2 => if !(1..=2).contains(&days_old) { continue; },
                             5 => if !(3..=5).contains(&days_old) { continue; },
