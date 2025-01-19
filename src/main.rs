@@ -40,6 +40,7 @@ fn print_help() {
     println!("  cargo run");
     println!("  cargo run -- help");
     println!("  cargo run -- clean-temp");
+    println!("  cargo run -- clean-temp");
 }
 
 fn prompt_temp_file_age() -> Option<u64> {
