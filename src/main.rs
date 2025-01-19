@@ -34,7 +34,7 @@ fn print_help() {
     println!("Available Commands:");
     println!("  help            - Show this help message");
     println!("  show-temp-files - Display detailed temporary file information");
-    println!("  clean-temp     - Clean temporary files older than 7 days");
+    println!("  clean-temp      - Clean temporary files older than 7 days");
     println!("  monitor        - Run continuous monitoring (default)");
     println!("\nExamples:");
     println!("  cargo run");
