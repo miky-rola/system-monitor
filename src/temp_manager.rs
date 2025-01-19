@@ -1,6 +1,6 @@
 use std::fs;
 use std::path::Path;
-use std::io;
+// use std::io;
 use walkdir::WalkDir;
 
 pub struct TempCleanupStats {
