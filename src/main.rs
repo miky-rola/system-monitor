@@ -9,6 +9,7 @@ mod display;
 mod security;
 mod types;
 mod temp_manager;
+use std::io::{self, Write};
 
 use metrics::collect_system_metrics;
 use display::{
