@@ -42,6 +42,43 @@ fn print_help() {
     println!("  cargo run -- clean-temp");
 }
 
+fn prompt_temp_file_age() -> Option<u64> {
+    println!("\nChoose files to delete based on age:");
+    println!("1. Recent files (1-2 days old)");
+    println!("2. Moderately old files (3-5 days old)");
+    println!("3. Old files (6+ days old)");
+    println!("4. Cancel cleanup");
+    
+    print!("\nEnter your choice (1-4): ");
+    io::stdout().flush().unwrap();
+    
+    let mut input = String::new();
+    io::stdin().read_line(&mut input).unwrap();
+    
+    match input.trim() {
+        "1" => {
+            println!("Deleting files 1-2 days old...");
+            Some(2)
+        },
+        "2" => {
+            println!("Deleting files 3-5 days old...");
+            Some(5)
+        },
+        "3" => {
+            println!("Deleting files 6+ days old...");
+            Some(6)
+        },
+        "4" => {
+            println!("Cleanup cancelled.");
+            None
+        },
+        _ => {
+            println!("Invalid choice. Cleanup cancelled.");
+            None
+        }
+    }
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     let command = args.get(1).map(|s| s.as_str());
