@@ -41,6 +41,7 @@ fn print_help() {
     println!("  cargo run -- help");
     println!("  cargo run -- clean-temp");
     println!("  cargo run -- show-temp-files");
+    println!("  cargo run -- show-temp-files");
 }
 
 fn prompt_temp_file_age() -> Option<u64> {
