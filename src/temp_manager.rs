@@ -45,7 +45,6 @@ pub fn delete_temp_files(paths: &[&Path], older_than_days: Option<u64>) -> TempC
                     }
                 }
 
-                // Try to delete the file
                 match fs::remove_file(entry.path()) {
                     Ok(_) => {
                         stats.files_deleted += 1;
