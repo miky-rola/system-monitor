@@ -144,7 +144,6 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 2. Clone and build:
 ```bash
 git clone https://github.com/miky-rola/system-monitor
-cd system-monitor
 cargo build
 ```
 
