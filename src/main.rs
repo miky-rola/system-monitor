@@ -97,6 +97,9 @@ fn main() {
     let samples = (monitoring_duration.as_secs() / sample_interval.as_secs()) as usize;
     
     let mut sys = System::new_all();
+    #[cfg(target_os = "macos")]
+    sys.refresh_all();
+    #[cfg(not(target_os = "macos"))]
     sys.refresh_components_list();
 
     match command {
