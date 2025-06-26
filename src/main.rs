@@ -97,7 +97,7 @@ fn main() {
     let samples = (monitoring_duration.as_secs() / sample_interval.as_secs()) as usize;
     
     let mut sys = System::new_all();
-    sys.refresh_components_list();
+    sys.refresh_all();
 
     match command {
         Some("show-temp-files") => {
