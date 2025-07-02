@@ -90,5 +90,10 @@ fn calculate_usage_pattern(values: &[f32]) -> f64 {
     }
     trend /= (values.len() - 1) as f32;
 
-    ((volatility + trend.abs() + (avg / max)) / 3.0) as f64
+    let result = ((volatility + trend.abs() + (avg / max)) / 3.0) as f64;
+    if result.is_nan() {
+        0.0
+    } else {
+        result
+    }
 }
