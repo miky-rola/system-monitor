@@ -44,14 +44,14 @@ pub fn display_process_summary(sys: &mut System) {
             println!("{:<40} {:>10.1} {:>15}",
                 name,
                 cpu.max(0.0),
-                format_size(memory * 1024, BINARY)
+                format_size(memory, BINARY)
             );
         }
     }
 
     println!("\nSystem Totals:");
-    println!("Total Memory: {}", format_size(sys.total_memory() * 1024, BINARY));
-    println!("Used Memory:  {}", format_size(sys.used_memory() * 1024, BINARY));
+    println!("Total Memory: {}", format_size(sys.total_memory(), BINARY));
+    println!("Used Memory:  {}", format_size(sys.used_memory(), BINARY));
     println!("Total CPU Usage: {:.1}%", 
         sys.cpus().iter().map(|cpu| cpu.cpu_usage()).sum::<f32>() / sys.cpus().len() as f32
     );
@@ -125,8 +125,8 @@ pub fn display_performance_analysis(metrics_history: &[SystemMetrics]) {
 
     let memory_trend = analyze_memory_trend(metrics_history);
     println!("\nMemory Usage:");
-    println!("Average: {}", format_size(memory_trend.average as u64 * 1024, BINARY));
-    println!("Peak: {}", format_size(memory_trend.peak as u64 * 1024, BINARY));
+    println!("Average: {}", format_size(memory_trend.average as u64, BINARY));
+    println!("Peak: {}", format_size(memory_trend.peak as u64, BINARY));
     println!("Pattern: {}", classify_usage_pattern(memory_trend.pattern));
 
     let network_trend = analyze_network_trend(metrics_history);
