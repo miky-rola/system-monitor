@@ -44,6 +44,20 @@ curl -L https://github.com/miky-rola/system-monitor/releases/latest/download/sys
 
 **Windows:** Download from [GitHub Releases](https://github.com/miky-rola/system-monitor/releases) and add to PATH.
 
+## Upgrade
+
+**Homebrew:**
+```bash
+brew update && brew upgrade system-monitor && brew services restart system-monitor
+```
+
+**Cargo:**
+```bash
+cargo install system-monitor-rs --force
+```
+
+**Binary:** Re-run the install command above — it always pulls the latest release.
+
 ### Build from source
 
 ```bash
