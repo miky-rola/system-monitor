@@ -49,11 +49,11 @@ impl NotificationManager {
 
         if config.notifications.cpu_alert {
             let avg_cpu = metrics.cpu_usage.iter().sum::<f32>() / metrics.cpu_usage.len() as f32;
-            alerts.push((AlertKind::Cpu, avg_cpu > config.thresholds.cpu_percent));
+            alerts.push((AlertKind::Cpu, f64::from(avg_cpu) > config.thresholds.cpu_percent));
         }
 
         if config.notifications.memory_alert {
-            let memory_percent = (metrics.memory_usage as f64 / metrics.memory_total as f64 * 100.0) as u64;
+            let memory_percent = metrics.memory_usage as f64 / metrics.memory_total as f64 * 100.0;
             alerts.push((AlertKind::Memory, memory_percent > config.thresholds.memory_percent));
         }
 
@@ -61,7 +61,7 @@ impl NotificationManager {
             let max_temp = metrics.temperature.components.values()
                 .map(|r| r.celsius)
                 .fold(0.0_f32, f32::max);
-            alerts.push((AlertKind::Temperature, max_temp > config.thresholds.temperature_celsius));
+            alerts.push((AlertKind::Temperature, f64::from(max_temp) > config.thresholds.temperature_celsius));
         }
 
         if config.notifications.disk_alert {
@@ -115,10 +115,10 @@ fn alert_message(kind: &AlertKind, metrics: &SystemMetrics, config: &Config) -> 
             )
         }
         AlertKind::Memory => {
-            let percent = (metrics.memory_usage as f64 / metrics.memory_total as f64 * 100.0) as u64;
+            let percent = metrics.memory_usage as f64 / metrics.memory_total as f64 * 100.0;
             (
                 "High Memory Usage".to_string(),
-                format!("Memory at {percent}% (threshold: {}%)", config.thresholds.memory_percent),
+                format!("Memory at {percent:.0}% (threshold: {:.0}%)", config.thresholds.memory_percent),
             )
         }
         AlertKind::Temperature => {
@@ -152,6 +152,7 @@ mod tests {
             memory_usage,
             memory_total,
             swap_usage: 0,
+            swap_total: 0,
             network_rx: 0,
             network_tx: 0,
             disk_usage: HashMap::new(),
@@ -242,7 +243,7 @@ mod tests {
         let metrics = make_metrics(80.0, 60, 100);
         let mut config = default_config();
         config.thresholds.cpu_percent = 70.0;
-        config.thresholds.memory_percent = 50;
+        config.thresholds.memory_percent = 50.0;
 
         let alerts = manager.evaluate_alerts(&metrics, &config);
 
@@ -298,6 +299,6 @@ mod tests {
         let (title, body) = alert_message(&AlertKind::Memory, &metrics, &config);
         assert_eq!(title, "High Memory Usage");
         assert!(body.contains("85%"));
-        assert!(body.contains("80%"));
+        assert!(body.contains("80%"), "body was: {body}");
     }
 }
