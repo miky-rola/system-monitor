@@ -11,6 +11,12 @@ brew tap miky-rola/tap
 brew install system-monitor
 ```
 
+After installing, start the background service so it monitors automatically:
+
+```bash
+brew services start system-monitor
+```
+
 ### Download binary
 
 Grab the latest release for your platform from [GitHub Releases](https://github.com/miky-rola/system-monitor/releases).
