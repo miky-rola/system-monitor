@@ -2,9 +2,14 @@ use walkdir::WalkDir;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use sysinfo::{System, SystemExt, ProcessExt, DiskExt, CpuExt, NetworkExt, NetworksExt, ComponentExt};
-use crate::types::{SystemMetrics, DiskMetrics, ProcessMetrics, TempFileMetrics, TempFileInfo, TemperatureMetrics, TemperatureReading};
+use crate::types::{SystemMetrics, DiskMetrics, ProcessMetrics, TempFileMetrics, TempFileInfo, TemperatureMetrics, TemperatureReading, MetricsScope};
 
-pub fn collect_system_metrics(sys: &mut System) -> SystemMetrics {
+pub fn collect_system_metrics(sys: &mut System, scope: MetricsScope) -> SystemMetrics {
+    let temp_files = match scope {
+        MetricsScope::Full => collect_temp_metrics(),
+        MetricsScope::Light => TempFileMetrics { total_size: 0, files: Vec::new() },
+    };
+
     SystemMetrics {
         timestamp: std::time::Instant::now(),
         cpu_usage: sys.cpus().iter().map(|cpu| cpu.cpu_usage()).collect(),
@@ -15,14 +20,14 @@ pub fn collect_system_metrics(sys: &mut System) -> SystemMetrics {
         network_tx: sys.networks().iter().map(|(_, data)| data.transmitted()).sum(),
         disk_usage: collect_disk_metrics(sys),
         process_metrics: collect_process_metrics(sys),
-        temp_files: collect_temp_metrics(),
-        temperature: collect_temperature_metrics(sys),  
+        temp_files,
+        temperature: collect_temperature_metrics(sys),
     }
 }
 
 fn collect_disk_metrics(sys: &mut System) -> HashMap<String, DiskMetrics> {
     let mut metrics = HashMap::new();
-    
+
     for disk in sys.disks() {
         metrics.insert(
             disk.mount_point().to_string_lossy().to_string(),
@@ -34,7 +39,7 @@ fn collect_disk_metrics(sys: &mut System) -> HashMap<String, DiskMetrics> {
             }
         );
     }
-    
+
     metrics
 }
 
@@ -60,22 +65,19 @@ fn create_temp_reading(celsius: f32) -> TemperatureReading {
 
 fn collect_temperature_metrics(sys: &mut System) -> TemperatureMetrics {
     let mut components = HashMap::new();
-    
+
     sys.refresh_components();
-    println!("{:?}", sys.refresh_components());
     for component in sys.components() {
         components.insert(
             component.label().to_string(),
             create_temp_reading(component.temperature())
         );
-    println!("{:?}", component);
-
     }
 
     let cpu_temp = components.iter()
         .find(|(label, _)| label.to_lowercase().contains("cpu"))
         .map(|(_, temp)| temp.clone());
-        
+
     let gpu_temp = components.iter()
         .find(|(label, _)| label.to_lowercase().contains("gpu"))
         .map(|(_, temp)| temp.clone());
@@ -93,10 +95,10 @@ fn collect_temp_metrics() -> TempFileMetrics {
 
     let temp_paths = vec![
         std::env::temp_dir(),
-        PathBuf::from("/tmp"),           // Unix/Linux
-        PathBuf::from("/var/tmp"),       // Unix/Linux
-        PathBuf::from(format!("{}\\AppData\\Local\\Temp", 
-            std::env::var("USERPROFILE").unwrap_or_default())), // Windows
+        PathBuf::from("/tmp"),
+        PathBuf::from("/var/tmp"),
+        PathBuf::from(format!("{}\\AppData\\Local\\Temp",
+            std::env::var("USERPROFILE").unwrap_or_default())),
     ];
 
     for temp_path in temp_paths {
@@ -113,7 +115,7 @@ fn collect_temp_metrics() -> TempFileMetrics {
                     if metadata.is_file() {
                         let size = metadata.len();
                         total_size += size;
-                        
+
                         files.push(TempFileInfo {
                             path: entry.path().to_string_lossy().into_owned(),
                             size,
@@ -124,15 +126,10 @@ fn collect_temp_metrics() -> TempFileMetrics {
             }
     }
 
-    // Sort files by size in descending order
     files.sort_by(|a, b| b.size.cmp(&a.size));
 
     TempFileMetrics {
         total_size,
         files,
     }
-}
-
-fn debug_temperature_collection(sys: &mut System) {
-   
 }
