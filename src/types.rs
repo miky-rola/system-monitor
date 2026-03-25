@@ -26,6 +26,7 @@ pub struct SystemMetrics {
     pub memory_usage: u64,
     pub memory_total: u64,
     pub swap_usage: u64,
+    pub swap_total: u64,
     pub network_rx: u64,
     pub network_tx: u64,
     pub disk_usage: HashMap<String, DiskMetrics>,
@@ -65,6 +66,8 @@ pub struct TempFileInfo {
 pub struct SecurityAnalysis {
     pub unusual_network_activity: Vec<String>,
     pub high_resource_usage: Vec<String>,
+    pub zombie_processes: Vec<String>,
+    pub swap_pressure: Vec<String>,
 }
 
 pub struct UsageTrend {
