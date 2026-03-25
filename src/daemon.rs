@@ -5,7 +5,8 @@ use sysinfo::{System, SystemExt};
 use crate::config::Config;
 use crate::metrics::collect_system_metrics;
 use crate::notifications::NotificationManager;
-use crate::types::MetricsScope;
+use crate::security::{perform_security_analysis, generate_recommendations};
+use crate::types::{MetricsScope, SystemMetrics};
 
 pub fn run_daemon(config: &Config) {
     let running = Arc::new(AtomicBool::new(true));
@@ -33,16 +34,39 @@ pub fn run_daemon(config: &Config) {
 
     let mut notification_manager = NotificationManager::new(config.notifications.cooldown_secs);
     let interval = Duration::from_secs(config.daemon.check_interval_secs);
+    let max_history = 10;
+    let mut metrics_history: Vec<SystemMetrics> = Vec::with_capacity(max_history);
 
     while running.load(Ordering::SeqCst) {
         sys.refresh_all();
         let metrics = collect_system_metrics(&mut sys, MetricsScope::Light);
 
         let avg_cpu = metrics.cpu_usage.iter().sum::<f32>() / metrics.cpu_usage.len() as f32;
-        let mem_percent = (metrics.memory_usage as f64 / metrics.memory_total as f64 * 100.0) as u64;
-        log::debug!("CPU: {avg_cpu:.1}%, Memory: {mem_percent}%");
+        let mem_percent = metrics.memory_usage as f64 / metrics.memory_total as f64 * 100.0;
+        log::debug!("CPU: {avg_cpu:.1}%, Memory: {mem_percent:.0}%");
 
-        notification_manager.check_and_notify(&metrics, config);
+        metrics_history.push(metrics);
+        if metrics_history.len() > max_history {
+            metrics_history.remove(0);
+        }
+
+        notification_manager.check_and_notify(metrics_history.last().unwrap(), config);
+
+        let security_analysis = perform_security_analysis(&sys, &metrics_history, config);
+        let recommendations = generate_recommendations(&metrics_history, &security_analysis, config);
+
+        for finding in &security_analysis.zombie_processes {
+            log::warn!("Zombie process: {finding}");
+        }
+        for finding in &security_analysis.unusual_network_activity {
+            log::warn!("Network: {finding}");
+        }
+        for finding in &security_analysis.swap_pressure {
+            log::warn!("Swap: {finding}");
+        }
+        for rec in &recommendations {
+            log::info!("Recommendation: {rec}");
+        }
 
         std::thread::sleep(interval);
     }
@@ -64,6 +88,7 @@ mod tests {
             memory_usage: mem_used,
             memory_total: mem_total,
             swap_usage: 0,
+            swap_total: 0,
             network_rx: 0,
             network_tx: 0,
             disk_usage: HashMap::new(),
