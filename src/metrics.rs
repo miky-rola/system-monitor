@@ -16,6 +16,7 @@ pub fn collect_system_metrics(sys: &mut System, scope: MetricsScope) -> SystemMe
         memory_usage: sys.used_memory(),
         memory_total: sys.total_memory(),
         swap_usage: sys.used_swap(),
+        swap_total: sys.total_swap(),
         network_rx: sys.networks().iter().map(|(_, data)| data.received()).sum(),
         network_tx: sys.networks().iter().map(|(_, data)| data.transmitted()).sum(),
         disk_usage: collect_disk_metrics(sys),
