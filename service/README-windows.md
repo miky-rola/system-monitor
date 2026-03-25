@@ -2,18 +2,22 @@
 
 ## Task Scheduler (recommended)
 
-Run in an elevated PowerShell:
+Run in an elevated PowerShell. This auto-detects the binary location:
 
 ```powershell
-schtasks /create /tn "SystemMonitor" /tr "C:\path\to\system-monitor.exe daemon" /sc onlogon /rl limited
+schtasks /create /tn "SystemMonitor" /tr "\"$(where.exe system-monitor)\" daemon" /sc onlogon /rl limited
 ```
 
-Replace `C:\path\to\system-monitor.exe` with the actual path to the binary.
+If `system-monitor` is not on your PATH, specify the full path manually:
+
+```powershell
+schtasks /create /tn "SystemMonitor" /tr "C:\Users\YourName\Downloads\system-monitor.exe daemon" /sc onlogon /rl limited
+```
 
 ## Manual start
 
 ```powershell
-system-monitor.exe daemon
+system-monitor daemon
 ```
 
 ## Remove the scheduled task
