@@ -1,0 +1,20 @@
+[monitoring]
+duration_secs = 30        # one-shot monitoring duration
+sample_interval_secs = 5  # one-shot sample interval
+
+[thresholds]
+cpu_percent = 90.0        # CPU usage alert threshold
+memory_percent = 80       # memory usage alert threshold
+temperature_celsius = 80.0 # temperature warning threshold
+disk_percent = 90.0       # disk usage alert threshold
+
+[notifications]
+enabled = true
+cpu_alert = true
+memory_alert = true
+temperature_alert = true
+disk_alert = true
+cooldown_secs = 300       # minimum seconds between repeat alerts
+
+[daemon]
+check_interval_secs = 60  # how often daemon checks metrics
