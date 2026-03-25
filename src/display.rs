@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use sysinfo::{System, SystemExt, ProcessExt, CpuExt};
 use humansize::{format_size, BINARY};
 use crate::types::{SystemMetrics, SecurityAnalysis};
+use crate::config::Config;
 use crate::analysis::{analyze_cpu_trend, analyze_memory_trend, analyze_network_trend, classify_usage_pattern};
 
 pub fn display_process_summary(sys: &mut System) {
@@ -15,7 +16,7 @@ pub fn display_process_summary(sys: &mut System) {
     sys.refresh_all();
 
     let mut processes: Vec<_> = sys.processes().values().collect();
-    processes.sort_by(|a, b| b.memory().cmp(&a.memory()));
+    processes.sort_by_key(|b| std::cmp::Reverse(b.memory()));
 
     println!("{:<40} {:>10} {:>15}", "Process Name", "CPU %", "Memory Usage");
     println!("{:-<67}", "");
@@ -75,7 +76,7 @@ pub fn display_temp_files(metrics: &SystemMetrics) {
     
     if !metrics.temp_files.files.is_empty() {
         println!("\nAll Temporary Files:");
-        println!("{:<10} {:<20} {}", "Size", "Last Modified", "Path");
+        println!("{:<10} {:<20} Path", "Size", "Last Modified");
         println!("{:-<80}", "");
         
         for file in &metrics.temp_files.files {
@@ -167,7 +168,7 @@ pub fn display_recommendations(recommendations: &[String]) {
     }
 }
 
-pub fn display_temperature_info(metrics: &SystemMetrics) {
+pub fn display_temperature_info(metrics: &SystemMetrics, config: &Config) {
     println!("\n=== Temperature Information ===");
     
     if let Some(cpu_temp) = &metrics.temperature.cpu_temp {
@@ -197,7 +198,7 @@ pub fn display_temperature_info(metrics: &SystemMetrics) {
 
     // Add temperature warnings if needed
     for (label, temp) in &metrics.temperature.components {
-        if temp.celsius > 80.0 {
+        if temp.celsius > config.thresholds.temperature_celsius {
             println!("\n⚠️ WARNING: {} temperature is high ({:.1}°C / {:.1}°F)", 
                 label, 
                 temp.celsius, 
