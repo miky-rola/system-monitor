@@ -1,165 +1,157 @@
-# System Performance Monitor
+# System Monitor
 
-A comprehensive system monitoring tool written in Rust that provides detailed analysis of system performance, security, and resource usage.
+A lightweight, cross-platform system monitoring tool with desktop notifications. Monitors CPU, memory, disk, temperature, and network — alerting you when something needs attention.
 
-## Features
+## Install
 
-- **Real-time System Monitoring**
-  - CPU usage per core
-  - Memory usage and trends
-  - Network activity monitoring
-  - Disk usage statistics
-  - Temporary file analysis and management
+### Homebrew (macOS / Linux)
 
-- **Process Analysis**
-  - Detailed process resource usage
-  - Process grouping by name
-  - Memory and CPU usage tracking
-  - Browser memory analysis
+```bash
+brew tap miky-rola/tap
+brew install system-monitor
+```
 
-- **Security Analysis**
-  - Unusual network activity monitoring
-  - Resource usage anomaly detection
-  - High CPU/Memory usage alerts
-  - Browser resource monitoring
+### Download binary
 
-- **Performance Analysis**
-  - CPU usage trends and patterns
-  - Memory usage patterns
-  - Network throughput analysis
-  - System resource utilization trends
-  - Temperature trend analysis
+Grab the latest release for your platform from [GitHub Releases](https://github.com/miky-rola/system-monitor/releases).
 
-## Requirements
+### Cargo
 
-- Rust 1.70.0 or higher
-- Linux, macOS, or Windows operating system
+```bash
+cargo install system-monitor
+```
 
-## Installation
+### Build from source
 
-1. Clone the repository:
 ```bash
 git clone https://github.com/miky-rola/system-monitor
 cd system-monitor
-```
-
-2. Build the project:
-```bash
 cargo build --release
-```
-
-3. Run the binary:
-```bash
-./target/release/system-monitor
 ```
 
 ## Usage
 
-### Basic Monitoring
-Run without arguments to start comprehensive system monitoring:
+### One-shot monitoring (default)
+
 ```bash
-cargo run
+system-monitor
 ```
 
-### Available Commands
+Collects system metrics over 30 seconds and prints a full report: CPU trends, memory usage, temperature, security analysis, and recommendations.
+
+### Daemon mode
+
 ```bash
-cargo run -- [command]
-
-Commands:
-  help            - Show help message
-  show-temp-files - Display detailed temporary file information
-  clean-temp      - Clean temporary files with age selection
-  monitor         - Run continuous monitoring (default)
+system-monitor daemon
 ```
 
-### Temporary File Management
-The clean-temp command now offers interactive age selection:
-- Recent files (1-2 days old)
-- Moderately old files (3-5 days old)
-- Old files (6+ days old)
-- Option to cancel cleanup
+Runs continuously in the background, checking your system every 60 seconds. Sends desktop notifications when CPU, memory, temperature, or disk usage exceeds your configured thresholds.
 
-Example output:
-```
-=== System Information ===
-Device Name: hostname
-System: Ubuntu 22.04 LTS
-CPUs: 8 (Physical), 16 (Logical)
-
-=== Performance Analysis ===
-CPU Usage Trends:
-Core 0: 45.2% avg, Pattern: Moderate
-Memory Usage:
-Average: 8.2 GB
-Peak: 12.1 GB
-Pattern: Moderate
-
-=== Temperature Information ===
-CPU Temperature: 65.0°C / 149.0°F
-GPU Temperature: 71.2°C / 160.2°F
-
-=== System Recommendations ===
-* Schedule regular system maintenance
-* Monitor browser memory usage
-* Check high temperature components
-```
-
-## Example outputs
-![System Monitor Screenshot 1](https://res.cloudinary.com/dxbz61zly/image/upload/v1736711345/Screenshot_2025-01-12_193745_nmffv9.png)
-
-![System Monitor Screenshot 2](https://res.cloudinary.com/dxbz61zly/image/upload/v1736711377/Screenshot_2025-01-12_194048_jofbyg.png)
-
-## Project Structure
+### All commands
 
 ```
-src/
-├── main.rs         # Entry point and program flow
-├── types.rs        # Type definitions
-├── metrics.rs      # System metrics collection
-├── analysis.rs     # Data analysis
-├── security.rs     # Security analysis
-├── display.rs      # Output formatting and display
-└── temp_manager.rs # Temporary file management
+system-monitor                  Run one-shot monitoring (default)
+system-monitor monitor          Same as above
+system-monitor daemon           Run as continuous background monitor
+system-monitor show-temp-files  List temporary files with sizes and ages
+system-monitor clean-temp       Interactively clean temp files by age
+system-monitor config           Show current configuration and config path
+```
+
+### Global flags
+
+```
+--config <path>    Use a custom config file
+--no-notify        Disable desktop notifications
+--interval <secs>  Override daemon check interval
 ```
 
 ## Configuration
 
-The monitor runs with the following default settings:
-- Monitoring duration: 30 seconds
-- Sample interval: 5 seconds
-- CPU usage threshold: 90%
-- Memory usage threshold: 80%
-- Network baseline: 2x average throughput
-- Temperature warning threshold: 80°C
+System monitor works out of the box with sensible defaults. To customize, create a config file:
 
-## Development
+| Platform | Path |
+|----------|------|
+| Linux    | `~/.config/system-monitor/config.toml` |
+| macOS    | `~/Library/Application Support/system-monitor/config.toml` |
+| Windows  | `%APPDATA%\system-monitor\config.toml` |
 
-### Building from Source
+See [config.example.toml](config.example.toml) for all options. Key defaults:
 
-1. Install Rust and Cargo:
+| Setting | Default |
+|---------|---------|
+| CPU alert threshold | 90% |
+| Memory alert threshold | 80% |
+| Temperature warning | 80°C |
+| Disk alert threshold | 90% |
+| Daemon check interval | 60s |
+| Notification cooldown | 5 min |
+
+## Running as a service
+
+### macOS (launchd)
+
 ```bash
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+cp service/com.mikyrola.system-monitor.plist ~/Library/LaunchAgents/
+launchctl load ~/Library/LaunchAgents/com.mikyrola.system-monitor.plist
 ```
 
-2. Clone and build:
+Or with Homebrew: `brew services start system-monitor`
+
+### Linux (systemd)
+
 ```bash
-git clone https://github.com/miky-rola/system-monitor
-cargo build
+cp service/system-monitor.service ~/.config/systemd/user/
+systemctl --user enable --now system-monitor
+```
+
+### Windows
+
+See [service/README-windows.md](service/README-windows.md).
+
+## Features
+
+- Real-time CPU, memory, network, disk, and temperature monitoring
+- Desktop notifications with configurable thresholds and cooldowns
+- Process analysis with grouping by name
+- Security anomaly detection (unusual network activity, high resource usage)
+- Temporary file management (list, clean by age)
+- Daemon mode for continuous background monitoring
+- Cross-platform: macOS, Linux, Windows
+
+## Example output
+
+![System Monitor Screenshot 1](https://res.cloudinary.com/dxbz61zly/image/upload/v1736711345/Screenshot_2025-01-12_193745_nmffv9.png)
+
+![System Monitor Screenshot 2](https://res.cloudinary.com/dxbz61zly/image/upload/v1736711377/Screenshot_2025-01-12_194048_jofbyg.png)
+
+## Project structure
+
+```
+src/
+├── main.rs           Entry point and CLI
+├── config.rs         Configuration loading and defaults
+├── daemon.rs         Continuous monitoring loop
+├── notifications.rs  Desktop notification delivery
+├── metrics.rs        System metrics collection
+├── analysis.rs       Trend analysis and pattern detection
+├── security.rs       Security analysis and recommendations
+├── display.rs        Output formatting
+├── types.rs          Type definitions
+└── temp_manager.rs   Temporary file management
 ```
 
 ## Contributing
 
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature-name`
-3. Commit changes: `git commit -am 'Add feature'`
-4. Push to branch: `git push origin feature-name`
+3. Write tests first, then implement
+4. Run `cargo test && cargo clippy -- -D warnings`
 5. Submit a Pull Request
 
-## Dependencies
+## License
 
-- [sysinfo](https://crates.io/crates/sysinfo) - System information gathering
-- [humansize](https://crates.io/crates/humansize) - Human-readable size formatting
-- [walkdir](https://crates.io/crates/walkdir) - Directory traversal for temp file management
+MIT - see [LICENSE](LICENSE)
 
 ## Contact
 
