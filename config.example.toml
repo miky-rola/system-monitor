@@ -3,10 +3,12 @@ duration_secs = 30        # one-shot monitoring duration
 sample_interval_secs = 5  # one-shot sample interval
 
 [thresholds]
-cpu_percent = 90.0        # CPU usage alert threshold
-memory_percent = 80       # memory usage alert threshold
-temperature_celsius = 80.0 # temperature warning threshold
-disk_percent = 90.0       # disk usage alert threshold
+cpu_percent = 90.0          # CPU usage alert threshold
+memory_percent = 80.0       # memory usage alert threshold
+temperature_celsius = 80.0  # temperature warning threshold
+disk_percent = 90.0         # disk usage alert threshold
+swap_percent = 80.0         # swap usage alert threshold
+browser_memory_mb = 1024.0  # browser memory alert threshold (MB)
 
 [notifications]
 enabled = true
