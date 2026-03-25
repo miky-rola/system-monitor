@@ -159,6 +159,20 @@ pub fn display_security_analysis(analysis: &SecurityAnalysis) {
             println!("- {}", usage);
         }
     }
+
+    if !analysis.zombie_processes.is_empty() {
+        println!("\nZombie Processes:");
+        for zombie in &analysis.zombie_processes {
+            println!("- {}", zombie);
+        }
+    }
+
+    if !analysis.swap_pressure.is_empty() {
+        println!("\nSwap Pressure:");
+        for swap in &analysis.swap_pressure {
+            println!("- {}", swap);
+        }
+    }
 }
 
 pub fn display_recommendations(recommendations: &[String]) {
@@ -198,7 +212,7 @@ pub fn display_temperature_info(metrics: &SystemMetrics, config: &Config) {
 
     // Add temperature warnings if needed
     for (label, temp) in &metrics.temperature.components {
-        if temp.celsius > config.thresholds.temperature_celsius {
+        if f64::from(temp.celsius) > config.thresholds.temperature_celsius {
             println!("\n⚠️ WARNING: {} temperature is high ({:.1}°C / {:.1}°F)", 
                 label, 
                 temp.celsius, 
