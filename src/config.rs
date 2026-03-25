@@ -20,10 +20,12 @@ pub struct MonitoringConfig {
 #[derive(Debug, Deserialize, Clone, PartialEq)]
 #[serde(default)]
 pub struct ThresholdConfig {
-    pub cpu_percent: f32,
-    pub memory_percent: u64,
-    pub temperature_celsius: f32,
+    pub cpu_percent: f64,
+    pub memory_percent: f64,
+    pub temperature_celsius: f64,
     pub disk_percent: f64,
+    pub swap_percent: f64,
+    pub browser_memory_mb: f64,
 }
 
 #[derive(Debug, Deserialize, Clone, PartialEq)]
@@ -56,9 +58,11 @@ impl Default for ThresholdConfig {
     fn default() -> Self {
         Self {
             cpu_percent: 90.0,
-            memory_percent: 80,
+            memory_percent: 80.0,
             temperature_celsius: 80.0,
             disk_percent: 90.0,
+            swap_percent: 80.0,
+            browser_memory_mb: 1024.0,
         }
     }
 }
@@ -121,6 +125,8 @@ pub fn display_config(config: &Config) {
     println!("  memory_percent = {}", config.thresholds.memory_percent);
     println!("  temperature_celsius = {}", config.thresholds.temperature_celsius);
     println!("  disk_percent = {}", config.thresholds.disk_percent);
+    println!("  swap_percent = {}", config.thresholds.swap_percent);
+    println!("  browser_memory_mb = {}", config.thresholds.browser_memory_mb);
     println!();
     println!("[notifications]");
     println!("  enabled = {}", config.notifications.enabled);
@@ -150,9 +156,11 @@ mod tests {
             },
             thresholds: ThresholdConfig {
                 cpu_percent: 90.0,
-                memory_percent: 80,
+                memory_percent: 80.0,
                 temperature_celsius: 80.0,
                 disk_percent: 90.0,
+                swap_percent: 80.0,
+                browser_memory_mb: 1024.0,
             },
             notifications: NotificationConfig {
                 enabled: true,
@@ -177,7 +185,7 @@ cpu_percent = 75.0
         let config: Config = toml::from_str(toml_content).unwrap();
 
         assert_eq!(config.thresholds.cpu_percent, 75.0);
-        assert_eq!(config.thresholds.memory_percent, 80);
+        assert_eq!(config.thresholds.memory_percent, 80.0);
         assert_eq!(config.monitoring, MonitoringConfig::default());
         assert_eq!(config.notifications, NotificationConfig::default());
         assert_eq!(config.daemon, DaemonConfig::default());
@@ -192,9 +200,11 @@ sample_interval_secs = 10
 
 [thresholds]
 cpu_percent = 75.0
-memory_percent = 70
+memory_percent = 70.0
 temperature_celsius = 85.0
 disk_percent = 95.0
+swap_percent = 80.0
+browser_memory_mb = 1024.0
 
 [notifications]
 enabled = false
@@ -216,9 +226,11 @@ check_interval_secs = 120
             },
             thresholds: ThresholdConfig {
                 cpu_percent: 75.0,
-                memory_percent: 70,
+                memory_percent: 70.0,
                 temperature_celsius: 85.0,
                 disk_percent: 95.0,
+                swap_percent: 80.0,
+                browser_memory_mb: 1024.0,
             },
             notifications: NotificationConfig {
                 enabled: false,
