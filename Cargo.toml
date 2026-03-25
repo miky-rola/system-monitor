@@ -1,5 +1,5 @@
 [package]
-name = "system-monitor"
+name = "system-monitor-rs"
 version = "0.2.0"
 edition = "2021"
 authors = ["miky rola <mikyrola8@gmail.com>"]
@@ -9,6 +9,10 @@ repository = "https://github.com/miky-rola/system-monitor"
 readme = "README.MD"
 keywords = ["system", "monitor", "notifications", "daemon", "sysinfo"]
 categories = ["command-line-utilities", "os"]
+
+[[bin]]
+name = "system-monitor"
+path = "src/main.rs"
 
 [dependencies]
 sysinfo = "0.29.0"

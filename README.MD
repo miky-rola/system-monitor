@@ -24,7 +24,7 @@ Grab the latest release for your platform from [GitHub Releases](https://github.
 ### Cargo
 
 ```bash
-cargo install system-monitor
+cargo install system-monitor-rs
 ```
 
 ### Build from source
