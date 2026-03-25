@@ -1,6 +1,12 @@
 use std::collections::HashMap;
 use std::time::{SystemTime, Instant};
 
+#[derive(Debug, Clone, PartialEq)]
+pub enum MetricsScope {
+    Full,
+    Light,
+}
+
 #[derive(Clone)]
 pub struct TemperatureReading {
     pub celsius: f32,
@@ -13,8 +19,7 @@ pub struct TemperatureMetrics {
     pub components: HashMap<String, TemperatureReading>,
 }
 
-
-
+#[allow(dead_code)]
 pub struct SystemMetrics {
     pub timestamp: Instant,
     pub cpu_usage: Vec<f32>,
@@ -29,6 +34,7 @@ pub struct SystemMetrics {
     pub temperature: TemperatureMetrics,
 }
 
+#[allow(dead_code)]
 pub struct DiskMetrics {
     pub total: u64,
     pub used: u64,
@@ -36,6 +42,7 @@ pub struct DiskMetrics {
     pub write_rate: f64,
 }
 
+#[allow(dead_code)]
 pub struct ProcessMetrics {
     pub name: String,
     pub pid: sysinfo::Pid,
@@ -59,7 +66,6 @@ pub struct SecurityAnalysis {
     pub unusual_network_activity: Vec<String>,
     pub high_resource_usage: Vec<String>,
 }
-
 
 pub struct UsageTrend {
     pub average: f64,
