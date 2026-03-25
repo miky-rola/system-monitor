@@ -56,7 +56,12 @@ brew update && brew upgrade system-monitor && brew services restart system-monit
 cargo install system-monitor-rs --force
 ```
 
-**Binary:** Re-run the install command above — it always pulls the latest release.
+**Windows:**
+```powershell
+Invoke-WebRequest -Uri https://github.com/miky-rola/system-monitor/releases/latest/download/system-monitor-windows-x86_64.exe.zip -OutFile system-monitor.zip; Expand-Archive -Force system-monitor.zip -DestinationPath "$env:LOCALAPPDATA\system-monitor"
+```
+
+**Binary (Linux/macOS):** Re-run the install command above — it always pulls the latest release.
 
 ### Build from source
 
