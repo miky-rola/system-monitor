@@ -28,7 +28,8 @@ brew tap miky-rola/tap && brew install system-monitor && brew services start sys
 
 **Cargo:**
 ```bash
-cargo install system-monitor-rs && system-monitor daemon &
+cargo install system-monitor-rs
+system-monitor daemon
 ```
 
 **Linux (binary):**
