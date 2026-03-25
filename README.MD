@@ -1,67 +1,62 @@
 # System Monitor
 
-A lightweight, cross-platform system monitoring tool with desktop notifications. Monitors CPU, memory, disk, temperature, and network — alerting you when something needs attention.
+A lightweight, cross-platform system monitoring tool that runs in the background and alerts you when something needs attention. Like having a sysadmin watching your machine 24/7.
 
-## Install
+## Why not just use top or htop?
 
-### Homebrew (macOS / Linux)
+| | `top` | `htop` | `system-monitor` |
+|---|---|---|---|
+| CPU / memory / disk | per-process only | per-process only | per-process + system-wide trends |
+| Trend analysis | - | - | tracks patterns over time (increasing, volatile, steady) |
+| Anomaly detection | - | - | flags unusual network activity and resource spikes |
+| Desktop notifications | - | - | alerts you when thresholds are breached |
+| Background daemon | - | - | runs silently, no terminal needed |
+| Temperature monitoring | - | - | CPU/GPU temps with configurable warnings |
+| Temp file cleanup | - | - | find and clean old temp files by age |
+| Recommendations | - | - | actionable suggestions based on system state |
+| Runtime dependencies | pre-installed | ncurses | none — single static binary |
+| Requires terminal open | yes | yes | no — daemon mode runs in background |
 
+`top` and `htop` show you what's happening **right now**. system-monitor tells you **what's wrong and what to do about it**.
+
+## Quick install
+
+**macOS / Linux (Homebrew):**
 ```bash
-brew tap miky-rola/tap
-brew install system-monitor
+brew tap miky-rola/tap && brew install system-monitor && brew services start system-monitor
 ```
 
-After installing, start the background service so it monitors automatically:
-
+**Cargo:**
 ```bash
-brew services start system-monitor
+cargo install system-monitor-rs && system-monitor daemon &
 ```
 
-### Download binary
-
-Grab the latest release for your platform from [GitHub Releases](https://github.com/miky-rola/system-monitor/releases).
-
-### Cargo
-
+**Linux (binary):**
 ```bash
-cargo install system-monitor-rs
+curl -L https://github.com/miky-rola/system-monitor/releases/latest/download/system-monitor-linux-x86_64.tar.gz | tar xz && sudo mv system-monitor-linux-x86_64 /usr/local/bin/system-monitor
 ```
+
+**macOS Apple Silicon (binary):**
+```bash
+curl -L https://github.com/miky-rola/system-monitor/releases/latest/download/system-monitor-macos-aarch64.tar.gz | tar xz && sudo mv system-monitor-macos-aarch64 /usr/local/bin/system-monitor
+```
+
+**Windows:** Download from [GitHub Releases](https://github.com/miky-rola/system-monitor/releases) and add to PATH.
 
 ### Build from source
 
 ```bash
-git clone https://github.com/miky-rola/system-monitor
-cd system-monitor
-cargo build --release
+git clone https://github.com/miky-rola/system-monitor && cd system-monitor && cargo build --release
 ```
 
 ## Usage
 
-### One-shot monitoring (default)
-
 ```bash
-system-monitor
-```
-
-Collects system metrics over 30 seconds and prints a full report: CPU trends, memory usage, temperature, security analysis, and recommendations.
-
-### Daemon mode
-
-```bash
-system-monitor daemon
-```
-
-Runs continuously in the background, checking your system every 60 seconds. Sends desktop notifications when CPU, memory, temperature, or disk usage exceeds your configured thresholds.
-
-### All commands
-
-```
-system-monitor                  Run one-shot monitoring (default)
-system-monitor monitor          Same as above
-system-monitor daemon           Run as continuous background monitor
-system-monitor show-temp-files  List temporary files with sizes and ages
-system-monitor clean-temp       Interactively clean temp files by age
-system-monitor config           Show current configuration and config path
+system-monitor                  # Full system report (30s collection)
+system-monitor daemon           # Background monitor with notifications
+system-monitor show-temp-files  # List temp files with sizes and ages
+system-monitor clean-temp       # Interactively clean temp files by age
+system-monitor config           # Show config path and current settings
 ```
 
 ### Global flags
@@ -72,9 +67,30 @@ system-monitor config           Show current configuration and config path
 --interval <secs>  Override daemon check interval
 ```
 
+## Running as a service
+
+**macOS (Homebrew):**
+```bash
+brew services start system-monitor
+```
+
+**macOS (manual):**
+```bash
+cp service/com.mikyrola.system-monitor.plist ~/Library/LaunchAgents/
+launchctl load ~/Library/LaunchAgents/com.mikyrola.system-monitor.plist
+```
+
+**Linux (systemd):**
+```bash
+cp service/system-monitor.service ~/.config/systemd/user/
+systemctl --user enable --now system-monitor
+```
+
+**Windows:** See [service/README-windows.md](service/README-windows.md).
+
 ## Configuration
 
-System monitor works out of the box with sensible defaults. To customize, create a config file:
+Works out of the box. To customize, create a config file:
 
 | Platform | Path |
 |----------|------|
@@ -82,7 +98,7 @@ System monitor works out of the box with sensible defaults. To customize, create
 | macOS    | `~/Library/Application Support/system-monitor/config.toml` |
 | Windows  | `%APPDATA%\system-monitor\config.toml` |
 
-See [config.example.toml](config.example.toml) for all options. Key defaults:
+See [config.example.toml](config.example.toml) for all options. Defaults:
 
 | Setting | Default |
 |---------|---------|
@@ -93,59 +109,11 @@ See [config.example.toml](config.example.toml) for all options. Key defaults:
 | Daemon check interval | 60s |
 | Notification cooldown | 5 min |
 
-## Running as a service
-
-### macOS (launchd)
-
-```bash
-cp service/com.mikyrola.system-monitor.plist ~/Library/LaunchAgents/
-launchctl load ~/Library/LaunchAgents/com.mikyrola.system-monitor.plist
-```
-
-Or with Homebrew: `brew services start system-monitor`
-
-### Linux (systemd)
-
-```bash
-cp service/system-monitor.service ~/.config/systemd/user/
-systemctl --user enable --now system-monitor
-```
-
-### Windows
-
-See [service/README-windows.md](service/README-windows.md).
-
-## Features
-
-- Real-time CPU, memory, network, disk, and temperature monitoring
-- Desktop notifications with configurable thresholds and cooldowns
-- Process analysis with grouping by name
-- Security anomaly detection (unusual network activity, high resource usage)
-- Temporary file management (list, clean by age)
-- Daemon mode for continuous background monitoring
-- Cross-platform: macOS, Linux, Windows
-
 ## Example output
 
 ![System Monitor Screenshot 1](https://res.cloudinary.com/dxbz61zly/image/upload/v1736711345/Screenshot_2025-01-12_193745_nmffv9.png)
 
 ![System Monitor Screenshot 2](https://res.cloudinary.com/dxbz61zly/image/upload/v1736711377/Screenshot_2025-01-12_194048_jofbyg.png)
-
-## Project structure
-
-```
-src/
-├── main.rs           Entry point and CLI
-├── config.rs         Configuration loading and defaults
-├── daemon.rs         Continuous monitoring loop
-├── notifications.rs  Desktop notification delivery
-├── metrics.rs        System metrics collection
-├── analysis.rs       Trend analysis and pattern detection
-├── security.rs       Security analysis and recommendations
-├── display.rs        Output formatting
-├── types.rs          Type definitions
-└── temp_manager.rs   Temporary file management
-```
 
 ## Contributing
 
