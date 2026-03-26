@@ -110,15 +110,29 @@ systemctl --user enable --now system-monitor
 
 ## Configuration
 
-Works out of the box. To customize, create a config file:
+Works out of the box with sensible defaults — no config file needed. Run `system-monitor config` to see your current settings and config path.
 
-| Platform | Path |
-|----------|------|
-| Linux    | `~/.config/system-monitor/config.toml` |
-| macOS    | `~/Library/Application Support/system-monitor/config.toml` |
-| Windows  | `%APPDATA%\system-monitor\config.toml` |
+To customize thresholds, copy the example config:
 
-See [config.example.toml](config.example.toml) for all options. Defaults:
+**macOS:**
+```bash
+mkdir -p "$HOME/Library/Application Support/system-monitor"
+cp config.example.toml "$HOME/Library/Application Support/system-monitor/config.toml"
+```
+
+**Linux:**
+```bash
+mkdir -p ~/.config/system-monitor
+cp config.example.toml ~/.config/system-monitor/config.toml
+```
+
+**Windows (PowerShell):**
+```powershell
+New-Item -ItemType Directory -Force -Path "$env:APPDATA\system-monitor"
+Copy-Item config.example.toml "$env:APPDATA\system-monitor\config.toml"
+```
+
+Then edit the file to change any values. See [config.example.toml](config.example.toml) for all options. Defaults:
 
 | Setting | Default |
 |---------|---------|
