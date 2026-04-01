@@ -130,6 +130,13 @@ fn run_monitor(cfg: &config::Config) {
     let recommendations = generate_recommendations(&metrics_history, &security_analysis, cfg);
     display_recommendations(&recommendations);
 
+    if cfg.notifications.enabled {
+        if let Some(last_metrics) = metrics_history.last() {
+            let mut notifier = notifications::NotificationManager::new(cfg.notifications.cooldown_secs);
+            notifier.check_and_notify(last_metrics, cfg);
+        }
+    }
+
     println!("\nAvailable Commands:");
     println!("  system-monitor show-temp-files");
     println!("  system-monitor clean-temp");
