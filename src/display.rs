@@ -213,7 +213,7 @@ pub fn display_temperature_info(metrics: &SystemMetrics, config: &Config) {
     // Add temperature warnings if needed
     for (label, temp) in &metrics.temperature.components {
         if f64::from(temp.celsius) > config.thresholds.temperature_celsius {
-            println!("\n⚠️ WARNING: {} temperature is high ({:.1}°C / {:.1}°F)", 
+            println!("\nWARNING: {} temperature is high ({:.1}°C / {:.1}°F)", 
                 label, 
                 temp.celsius, 
                 temp.fahrenheit
