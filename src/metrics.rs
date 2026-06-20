@@ -1,9 +1,7 @@
 use walkdir::WalkDir;
 use std::collections::HashMap;
 use std::path::PathBuf;
-use sysinfo::{System, SystemExt, ProcessExt, DiskExt, CpuExt, NetworkExt, NetworksExt};
-#[cfg(not(target_os = "macos"))]
-use sysinfo::ComponentExt;
+use sysinfo::{System, SystemExt, ProcessExt, DiskExt, CpuExt, NetworkExt, NetworksExt, ComponentExt};
 use crate::types::{SystemMetrics, DiskMetrics, ProcessMetrics, TempFileMetrics, TempFileInfo, TemperatureMetrics, TemperatureReading, MetricsScope};
 
 pub fn collect_system_metrics(sys: &mut System, scope: MetricsScope) -> SystemMetrics {
@@ -80,15 +78,30 @@ fn collect_temperature_metrics(sys: &mut System) -> TemperatureMetrics {
 }
 
 #[cfg(target_os = "macos")]
-fn collect_temperature_components(_sys: &mut System) -> HashMap<String, TemperatureReading> {
-    crate::temperature::read_sensors()
+fn collect_temperature_components(sys: &mut System) -> HashMap<String, TemperatureReading> {
+    let hid: HashMap<String, TemperatureReading> = crate::temperature::read_sensors()
         .into_iter()
         .map(|(label, celsius)| (label, create_temp_reading(celsius)))
-        .collect()
+        .collect();
+    if !hid.is_empty() {
+        return hid;
+    }
+
+    let fallback = sysinfo_temperature_components(sys);
+    if fallback.is_empty() {
+        log::warn!("No temperature sensors available (IOKit HID and sysinfo both returned none)");
+    } else {
+        log::info!("IOKit HID returned no sensors; using sysinfo temperature components");
+    }
+    fallback
 }
 
 #[cfg(not(target_os = "macos"))]
 fn collect_temperature_components(sys: &mut System) -> HashMap<String, TemperatureReading> {
+    sysinfo_temperature_components(sys)
+}
+
+fn sysinfo_temperature_components(sys: &mut System) -> HashMap<String, TemperatureReading> {
     sys.refresh_components();
     sys.components()
         .iter()

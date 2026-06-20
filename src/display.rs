@@ -184,7 +184,15 @@ pub fn display_recommendations(recommendations: &[String]) {
 
 pub fn display_temperature_info(metrics: &SystemMetrics, config: &Config) {
     println!("\n=== Temperature Information ===");
-    
+
+    if metrics.temperature.cpu_temp.is_none()
+        && metrics.temperature.gpu_temp.is_none()
+        && metrics.temperature.components.is_empty()
+    {
+        println!("Temperature data unavailable on this system.");
+        return;
+    }
+
     if let Some(cpu_temp) = &metrics.temperature.cpu_temp {
         println!("CPU Temperature: {:.1}°C / {:.1}°F", 
             cpu_temp.celsius, 

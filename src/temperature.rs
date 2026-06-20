@@ -39,7 +39,23 @@ extern "C" {
     fn IOHIDEventGetFloatValue(event: IOHIDEventRef, field: i32) -> f64;
 }
 
+const READ_ATTEMPTS: usize = 3;
+const RETRY_DELAY_MS: u64 = 50;
+
 pub fn read_sensors() -> HashMap<String, f32> {
+    for attempt in 0..READ_ATTEMPTS {
+        let readings = read_sensors_once();
+        if !readings.is_empty() {
+            return readings;
+        }
+        if attempt + 1 < READ_ATTEMPTS {
+            std::thread::sleep(std::time::Duration::from_millis(RETRY_DELAY_MS));
+        }
+    }
+    HashMap::new()
+}
+
+fn read_sensors_once() -> HashMap<String, f32> {
     let mut readings = HashMap::new();
 
     let matching = CFDictionary::from_CFType_pairs(&[
