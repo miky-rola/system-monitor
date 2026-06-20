@@ -14,6 +14,8 @@ mod temp_manager;
 mod config;
 mod notifications;
 mod daemon;
+#[cfg(target_os = "macos")]
+mod temperature;
 
 use metrics::collect_system_metrics;
 use types::MetricsScope;
@@ -185,7 +187,7 @@ fn run_clean_temp() {
 }
 
 fn main() {
-    env_logger::init();
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
     let cli = Cli::parse();
 
     let mut cfg = config::load(cli.config.as_deref());
