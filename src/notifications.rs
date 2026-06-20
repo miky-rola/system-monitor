@@ -93,16 +93,47 @@ impl NotificationManager {
     }
 
     fn send_notification(&mut self, title: &str, body: &str, kind: AlertKind) {
-        match notify_rust::Notification::new()
-            .summary(title)
-            .body(body)
-            .show()
-        {
-            Ok(_) => log::info!("Notification sent: {title}"),
+        match deliver_notification(title, body) {
+            Ok(()) => log::info!("Notification sent: {title}"),
             Err(e) => log::warn!("Failed to send notification: {e}"),
         }
         self.last_sent.insert(kind, Instant::now());
     }
+}
+
+#[cfg(target_os = "macos")]
+fn deliver_notification(title: &str, body: &str) -> Result<(), String> {
+    let script = format!(
+        "display notification \"{}\" with title \"{}\"",
+        escape_applescript(body),
+        escape_applescript(title),
+    );
+    let status = std::process::Command::new("osascript")
+        .arg("-e")
+        .arg(&script)
+        .status()
+        .map_err(|e| e.to_string())?;
+
+    if status.success() {
+        Ok(())
+    } else {
+        Err(format!("osascript exited with {status}"))
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn escape_applescript(value: &str) -> String {
+    value.replace('\\', "\\\\").replace('"', "\\\"")
+}
+
+#[cfg(not(target_os = "macos"))]
+fn deliver_notification(title: &str, body: &str) -> Result<(), String> {
+    notify_rust::Notification::new()
+        .summary(title)
+        .body(body)
+        .show()
+        .map(|_| ())
+        .map_err(|e| e.to_string())
 }
 
 fn alert_message(kind: &AlertKind, metrics: &SystemMetrics, config: &Config) -> (String, String) {
@@ -300,5 +331,13 @@ mod tests {
         assert_eq!(title, "High Memory Usage");
         assert!(body.contains("85%"));
         assert!(body.contains("80%"), "body was: {body}");
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn applescript_escaping_handles_quotes_and_backslashes() {
+        assert_eq!(escape_applescript("plain"), "plain");
+        assert_eq!(escape_applescript(r#"say "hi""#), r#"say \"hi\""#);
+        assert_eq!(escape_applescript(r"a\b"), r"a\\b");
     }
 }

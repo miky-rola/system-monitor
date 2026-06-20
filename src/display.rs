@@ -38,7 +38,7 @@ pub fn display_process_summary(sys: &mut System) {
     }
 
     let mut grouped_vec: Vec<_> = grouped_processes.into_iter().collect();
-    grouped_vec.sort_by(|a, b| b.1.1.cmp(&a.1.1));
+    grouped_vec.sort_by_key(|entry| std::cmp::Reverse(entry.1.1));
 
     for (name, (cpu, memory)) in grouped_vec {
         if memory > 0 {
@@ -184,7 +184,15 @@ pub fn display_recommendations(recommendations: &[String]) {
 
 pub fn display_temperature_info(metrics: &SystemMetrics, config: &Config) {
     println!("\n=== Temperature Information ===");
-    
+
+    if metrics.temperature.cpu_temp.is_none()
+        && metrics.temperature.gpu_temp.is_none()
+        && metrics.temperature.components.is_empty()
+    {
+        println!("Temperature data unavailable on this system.");
+        return;
+    }
+
     if let Some(cpu_temp) = &metrics.temperature.cpu_temp {
         println!("CPU Temperature: {:.1}°C / {:.1}°F", 
             cpu_temp.celsius, 

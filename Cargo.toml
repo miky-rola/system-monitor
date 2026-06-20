@@ -1,6 +1,6 @@
 [package]
 name = "system-monitor-rs"
-version = "0.3.1"
+version = "0.4.0"
 edition = "2021"
 authors = ["miky rola <mikyrola8@gmail.com>"]
 description = "A lightweight cross-platform system monitoring tool with desktop notifications"
@@ -26,6 +26,10 @@ notify-rust = "4"
 log = "0.4"
 env_logger = "0.11"
 ctrlc = "3"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+core-foundation = "0.9"
+core-foundation-sys = "0.8"
 
 [dev-dependencies]
 tempfile = "3"
