@@ -23,8 +23,9 @@ A lightweight, cross-platform system monitoring tool that runs in the background
 
 **macOS / Linux (Homebrew):**
 ```bash
-brew tap miky-rola/tap && brew install system-monitor && brew services start system-monitor
+brew tap miky-rola/tap && brew trust miky-rola/tap && brew install system-monitor && brew services start system-monitor
 ```
+> Recent Homebrew versions require `brew trust miky-rola/tap` before installing from a third-party tap. If you omit it and see an "untrusted tap" error, run it and retry.
 
 **Cargo:**
 ```bash
@@ -50,6 +51,7 @@ curl -L https://github.com/miky-rola/system-monitor/releases/latest/download/sys
 ```bash
 brew update && brew upgrade system-monitor && brew services restart system-monitor
 ```
+> If `brew update` reports the tap is untrusted, run `brew trust miky-rola/tap` once, then re-run the upgrade.
 
 **Cargo:**
 ```bash
@@ -86,6 +88,10 @@ system-monitor config           # Show config path and current settings
 --no-notify        Disable desktop notifications
 --interval <secs>  Override daemon check interval
 ```
+
+### macOS notifications
+
+Alerts are delivered through macOS Notification Center. If they don't appear, allow notifications for **Script Editor** in System Settings → Notifications, and make sure Focus / Do Not Disturb is off. On Apple Silicon, CPU/GPU temperatures are read from the built-in thermal sensors — no extra setup needed.
 
 ## Running as a service
 
