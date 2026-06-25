@@ -8,6 +8,7 @@ pub struct Config {
     pub thresholds: ThresholdConfig,
     pub notifications: NotificationConfig,
     pub daemon: DaemonConfig,
+    pub coolant: CoolantConfig,
 }
 
 #[derive(Debug, Deserialize, Clone, PartialEq)]
@@ -43,6 +44,14 @@ pub struct NotificationConfig {
 #[serde(default)]
 pub struct DaemonConfig {
     pub check_interval_secs: u64,
+}
+
+#[derive(Debug, Deserialize, Clone, PartialEq)]
+#[serde(default)]
+pub struct CoolantConfig {
+    pub enabled: bool,
+    pub top_processes: usize,
+    pub nice_level: i32,
 }
 
 impl Default for MonitoringConfig {
@@ -84,6 +93,16 @@ impl Default for DaemonConfig {
     fn default() -> Self {
         Self {
             check_interval_secs: 60,
+        }
+    }
+}
+
+impl Default for CoolantConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            top_processes: 3,
+            nice_level: 15,
         }
     }
 }
@@ -138,6 +157,11 @@ pub fn display_config(config: &Config) {
     println!();
     println!("[daemon]");
     println!("  check_interval_secs = {}", config.daemon.check_interval_secs);
+    println!();
+    println!("[coolant]");
+    println!("  enabled = {}", config.coolant.enabled);
+    println!("  top_processes = {}", config.coolant.top_processes);
+    println!("  nice_level = {}", config.coolant.nice_level);
 }
 
 #[cfg(test)]
@@ -173,6 +197,11 @@ mod tests {
             daemon: DaemonConfig {
                 check_interval_secs: 60,
             },
+            coolant: CoolantConfig {
+                enabled: true,
+                top_processes: 3,
+                nice_level: 15,
+            },
         });
     }
 
@@ -189,6 +218,7 @@ cpu_percent = 75.0
         assert_eq!(config.monitoring, MonitoringConfig::default());
         assert_eq!(config.notifications, NotificationConfig::default());
         assert_eq!(config.daemon, DaemonConfig::default());
+        assert_eq!(config.coolant, CoolantConfig::default());
     }
 
     #[test]
@@ -216,6 +246,11 @@ cooldown_secs = 600
 
 [daemon]
 check_interval_secs = 120
+
+[coolant]
+enabled = false
+top_processes = 5
+nice_level = 10
 "#;
         let config: Config = toml::from_str(toml_content).unwrap();
 
@@ -242,6 +277,11 @@ check_interval_secs = 120
             },
             daemon: DaemonConfig {
                 check_interval_secs: 120,
+            },
+            coolant: CoolantConfig {
+                enabled: false,
+                top_processes: 5,
+                nice_level: 10,
             },
         });
     }

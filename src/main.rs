@@ -3,7 +3,7 @@ use std::thread;
 use std::path::Path;
 use std::io::{self, Write};
 use clap::{Parser, Subcommand};
-use sysinfo::{System, SystemExt};
+use sysinfo::{System, SystemExt, PidExt};
 
 mod metrics;
 mod analysis;
@@ -14,6 +14,7 @@ mod temp_manager;
 mod config;
 mod notifications;
 mod daemon;
+mod coolant;
 #[cfg(target_os = "macos")]
 mod temperature;
 
@@ -94,6 +95,16 @@ fn prompt_temp_file_age() -> Option<u64> {
     }
 }
 
+fn prompt_apply_coolant(temp: f32, threshold: f64) -> bool {
+    println!("\nTemperature is {temp:.1}°C (over the {threshold:.1}°C threshold).");
+    print!("Apply coolant by lowering priority of the top CPU processes? [y/N]: ");
+    io::stdout().flush().unwrap();
+
+    let mut input = String::new();
+    io::stdin().read_line(&mut input).unwrap();
+    matches!(input.trim().to_lowercase().as_str(), "y" | "yes")
+}
+
 fn run_monitor(cfg: &config::Config) {
     let monitoring_duration = Duration::from_secs(cfg.monitoring.duration_secs);
     let sample_interval = Duration::from_secs(cfg.monitoring.sample_interval_secs);
@@ -136,6 +147,54 @@ fn run_monitor(cfg: &config::Config) {
         if let Some(last_metrics) = metrics_history.last() {
             let mut notifier = notifications::NotificationManager::new(cfg.notifications.cooldown_secs);
             notifier.check_and_notify(last_metrics, cfg);
+        }
+    }
+
+    if cfg.coolant.enabled {
+        if let Some(last_metrics) = metrics_history.last() {
+            let max_temp = last_metrics
+                .temperature
+                .components
+                .values()
+                .map(|reading| reading.celsius)
+                .fold(f32::NEG_INFINITY, f32::max)
+                .max(
+                    last_metrics
+                        .temperature
+                        .cpu_temp
+                        .as_ref()
+                        .map(|reading| reading.celsius)
+                        .unwrap_or(f32::NEG_INFINITY),
+                );
+
+            if max_temp > cfg.thresholds.temperature_celsius as f32
+                && prompt_apply_coolant(max_temp, cfg.thresholds.temperature_celsius)
+            {
+                sys.refresh_processes();
+                let fresh_processes = metrics::collect_process_metrics(&mut sys);
+                let targets = coolant::select_targets(&fresh_processes, &cfg.coolant);
+                if targets.is_empty() {
+                    println!("No throttleable processes found — nothing to cool.");
+                } else {
+                    println!("\nLowering priority of:");
+                    for target in &targets {
+                        println!(
+                            "  {} (pid {}) — {:.1}% CPU",
+                            target.name,
+                            target.pid.as_u32(),
+                            target.cpu_usage
+                        );
+                    }
+
+                    let report = coolant::apply_coolant(&targets, &cfg.coolant);
+                    for cooled in &report.cooled {
+                        println!("  cooled: {cooled}");
+                    }
+                    for error in &report.errors {
+                        println!("  failed: {error}");
+                    }
+                }
+            }
         }
     }
 

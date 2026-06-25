@@ -44,7 +44,7 @@ fn collect_disk_metrics(sys: &mut System) -> HashMap<String, DiskMetrics> {
     metrics
 }
 
-fn collect_process_metrics(sys: &mut System) -> Vec<ProcessMetrics> {
+pub fn collect_process_metrics(sys: &mut System) -> Vec<ProcessMetrics> {
     sys.processes()
         .values()
         .map(|process| ProcessMetrics {

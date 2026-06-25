@@ -93,6 +93,26 @@ system-monitor config           # Show config path and current settings
 
 Alerts are delivered through macOS Notification Center. If they don't appear, allow notifications for **Script Editor** in System Settings → Notifications, and make sure Focus / Do Not Disturb is off. On Apple Silicon, CPU/GPU temperatures are read from the built-in thermal sensors — no extra setup needed.
 
+### Apply coolant
+
+When you run `system-monitor` (interactive monitor mode) and a temperature sensor
+is over the configured threshold, it offers to "apply coolant":
+
+```
+Temperature is 92.4°C (over the 80.0°C threshold).
+Apply coolant by lowering priority of the top CPU processes? [y/N]:
+```
+
+Software can't physically cool the chip, so "coolant" means **reducing CPU load**:
+answering `y` lowers the OS scheduling priority of the heaviest CPU-consuming
+processes (`renice` on macOS/Linux, `PriorityClass = Idle` on Windows). This is
+reversible and never kills anything; critical system processes and the monitor
+itself are always skipped. The prompt only appears in interactive mode — the
+background daemon never throttles on its own.
+
+Configure it under `[coolant]` (see below): `enabled`, how many processes to
+target (`top_processes`), and the priority to set (`nice_level`).
+
 ## Running as a service
 
 **macOS (Homebrew):**
