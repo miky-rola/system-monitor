@@ -20,3 +20,8 @@ cooldown_secs = 300       # minimum seconds between repeat alerts
 
 [daemon]
 check_interval_secs = 60  # how often daemon checks metrics
+
+[coolant]
+enabled = true       # offer to throttle hot processes in interactive monitor mode
+top_processes = 3    # how many top CPU processes to lower priority of
+nice_level = 15      # scheduling priority to set (higher = lower priority)
