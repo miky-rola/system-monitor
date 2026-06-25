@@ -48,9 +48,13 @@ pub fn lower_priority(pid: sysinfo::Pid, nice_level: i32) -> Result<(), String> 
     let raw = pid.as_u32();
 
     #[cfg(unix)]
-    let output = Command::new("renice")
-        .args([nice_level.to_string(), "-p".to_string(), raw.to_string()])
-        .output();
+    let output = {
+        // Coolant only lowers priority; clamp so a negative value can't raise it.
+        let level = nice_level.clamp(0, 19);
+        Command::new("renice")
+            .args([level.to_string(), "-p".to_string(), raw.to_string()])
+            .output()
+    };
 
     #[cfg(windows)]
     let output = {

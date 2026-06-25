@@ -170,7 +170,9 @@ fn run_monitor(cfg: &config::Config) {
             if max_temp > cfg.thresholds.temperature_celsius as f32
                 && prompt_apply_coolant(max_temp, cfg.thresholds.temperature_celsius)
             {
-                let targets = coolant::select_targets(&last_metrics.process_metrics, &cfg.coolant);
+                sys.refresh_processes();
+                let fresh_processes = metrics::collect_process_metrics(&mut sys);
+                let targets = coolant::select_targets(&fresh_processes, &cfg.coolant);
                 if targets.is_empty() {
                     println!("No throttleable processes found — nothing to cool.");
                 } else {
