@@ -5,10 +5,7 @@ use sysinfo::{System, SystemExt, ProcessExt, DiskExt, CpuExt, NetworkExt, Networ
 use crate::types::{SystemMetrics, DiskMetrics, ProcessMetrics, TempFileMetrics, TempFileInfo, TemperatureMetrics, TemperatureReading, MetricsScope};
 
 pub fn collect_system_metrics(sys: &mut System, scope: MetricsScope) -> SystemMetrics {
-    let temp_files = match scope {
-        MetricsScope::Full => collect_temp_metrics(),
-        MetricsScope::Light => TempFileMetrics { total_size: 0, files: Vec::new() },
-    };
+    let temp_files = collect_temp_files(scope);
 
     SystemMetrics {
         timestamp: std::time::Instant::now(),
@@ -131,49 +128,50 @@ fn label_contains_any(label: &str, needles: &[&str]) -> bool {
     needles.iter().any(|needle| lower.contains(needle))
 }
 
-fn collect_temp_metrics() -> TempFileMetrics {
-    let mut total_size = 0u64;
-    let mut files = Vec::new();
+pub fn collect_temp_files(scope: MetricsScope) -> TempFileMetrics {
+    scan_temp_roots(&crate::temp_manager::temp_roots(), scope)
+}
 
-    let temp_paths = vec![
-        std::env::temp_dir(),
-        PathBuf::from("/tmp"),
-        PathBuf::from("/var/tmp"),
-        PathBuf::from(format!("{}\\AppData\\Local\\Temp",
-            std::env::var("USERPROFILE").unwrap_or_default())),
-    ];
+fn scan_temp_roots(roots: &[PathBuf], scope: MetricsScope) -> TempFileMetrics {
+    match scope {
+        MetricsScope::Full | MetricsScope::Summary => {}
+        MetricsScope::Light => return TempFileMetrics::default(),
+    }
 
-    for temp_path in temp_paths {
-        if !temp_path.exists() {
-            continue;
-        }
+    let mut metrics = TempFileMetrics::default();
 
-        for entry in WalkDir::new(temp_path)
+    for root in roots {
+        for entry in WalkDir::new(root)
             .min_depth(1)
             .follow_links(false)
             .into_iter()
-            .filter_map(|e| e.ok()) {
-                if let Ok(metadata) = entry.metadata() {
-                    if metadata.is_file() {
-                        let size = metadata.len();
-                        total_size += size;
-
-                        files.push(TempFileInfo {
-                            path: entry.path().to_string_lossy().into_owned(),
-                            size,
-                            last_modified: metadata.modified().ok(),
-                        });
-                    }
-                }
+            .filter_map(Result::ok)
+        {
+            let Ok(metadata) = entry.metadata() else {
+                continue;
+            };
+            if !metadata.is_file() {
+                continue;
             }
+
+            let size = metadata.len();
+            metrics.total_size = metrics.total_size.saturating_add(size);
+            metrics.file_count += 1;
+
+            match scope {
+                MetricsScope::Full => metrics.files.push(TempFileInfo {
+                    path: entry.path().to_string_lossy().into_owned(),
+                    size,
+                    last_modified: metadata.modified().ok(),
+                }),
+                MetricsScope::Summary | MetricsScope::Light => {}
+            }
+        }
     }
 
-    files.sort_by_key(|file| std::cmp::Reverse(file.size));
+    metrics.files.sort_by_key(|file| std::cmp::Reverse(file.size));
 
-    TempFileMetrics {
-        total_size,
-        files,
-    }
+    metrics
 }
 
 #[cfg(test)]
@@ -220,5 +218,52 @@ mod tests {
     fn hottest_returns_none_without_match() {
         let comps = components(&[("battery", 30.0)]);
         assert!(hottest(&comps, &["cpu", "gpu"]).is_none());
+    }
+
+    fn temp_root_with_files() -> tempfile::TempDir {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("small.tmp"), vec![0u8; 10]).unwrap();
+        std::fs::write(dir.path().join("large.tmp"), vec![0u8; 100]).unwrap();
+        dir
+    }
+
+    #[test]
+    fn light_scope_scans_nothing() {
+        let dir = temp_root_with_files();
+
+        let metrics = scan_temp_roots(&[dir.path().to_path_buf()], MetricsScope::Light);
+
+        assert_eq!(metrics, TempFileMetrics::default());
+    }
+
+    #[test]
+    fn summary_scope_counts_without_retaining_paths() {
+        let dir = temp_root_with_files();
+
+        let metrics = scan_temp_roots(&[dir.path().to_path_buf()], MetricsScope::Summary);
+
+        assert_eq!(
+            metrics,
+            TempFileMetrics {
+                total_size: 110,
+                file_count: 2,
+                files: Vec::new(),
+            }
+        );
+    }
+
+    #[test]
+    fn full_scope_retains_paths_largest_first() {
+        let dir = temp_root_with_files();
+
+        let metrics = scan_temp_roots(&[dir.path().to_path_buf()], MetricsScope::Full);
+
+        assert_eq!(metrics.total_size, 110);
+        assert_eq!(metrics.file_count, 2);
+        assert_eq!(
+            metrics.files.iter().map(|file| file.size).collect::<Vec<_>>(),
+            vec![100, 10]
+        );
+        assert!(metrics.files[0].path.ends_with("large.tmp"));
     }
 }
