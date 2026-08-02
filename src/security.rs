@@ -167,7 +167,7 @@ mod tests {
             network_tx: 0,
             disk_usage: HashMap::new(),
             process_metrics: Vec::new(),
-            temp_files: TempFileMetrics { total_size: 0, files: Vec::new() },
+            temp_files: TempFileMetrics::default(),
             temperature: TemperatureMetrics {
                 cpu_temp: None,
                 gpu_temp: None,
