@@ -80,6 +80,7 @@ pub struct UsageTrend {
     pub pattern: f64,
 }
 
+#[derive(Debug, PartialEq)]
 pub struct NetworkTrend {
     pub rx_rate: f64,
     pub tx_rate: f64,
