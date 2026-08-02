@@ -42,16 +42,21 @@ pub fn analyze_memory_trend(metrics_history: &[SystemMetrics]) -> UsageTrend {
 }
 
 pub fn analyze_network_trend(metrics_history: &[SystemMetrics]) -> NetworkTrend {
-    let duration = metrics_history.last().unwrap().timestamp
-        .duration_since(metrics_history[0].timestamp)
-        .as_secs_f64();
+    let elapsed = match (metrics_history.first(), metrics_history.last()) {
+        (Some(first), Some(last)) => last.timestamp.duration_since(first.timestamp).as_secs_f64(),
+        (Some(_), None) | (None, Some(_)) | (None, None) => 0.0,
+    };
+
+    if elapsed <= 0.0 {
+        return NetworkTrend { rx_rate: 0.0, tx_rate: 0.0 };
+    }
 
     let total_rx: u64 = metrics_history.iter().map(|m| m.network_rx).sum();
     let total_tx: u64 = metrics_history.iter().map(|m| m.network_tx).sum();
 
     NetworkTrend {
-        rx_rate: total_rx as f64 / duration,
-        tx_rate: total_tx as f64 / duration,
+        rx_rate: total_rx as f64 / elapsed,
+        tx_rate: total_tx as f64 / elapsed,
     }
 }
 
@@ -95,5 +100,63 @@ fn calculate_usage_pattern(values: &[f32]) -> f64 {
         0.0
     } else {
         result
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::types::{TempFileMetrics, TemperatureMetrics};
+    use std::collections::HashMap;
+    use std::time::Instant;
+
+    fn make_metrics(rx: u64, tx: u64) -> SystemMetrics {
+        SystemMetrics {
+            timestamp: Instant::now(),
+            cpu_usage: vec![10.0],
+            memory_usage: 50,
+            memory_total: 100,
+            swap_usage: 0,
+            swap_total: 0,
+            network_rx: rx,
+            network_tx: tx,
+            disk_usage: HashMap::new(),
+            process_metrics: Vec::new(),
+            temp_files: TempFileMetrics::default(),
+            temperature: TemperatureMetrics {
+                cpu_temp: None,
+                gpu_temp: None,
+                components: HashMap::new(),
+            },
+        }
+    }
+
+    #[test]
+    fn network_trend_is_zero_for_empty_history() {
+        assert_eq!(
+            analyze_network_trend(&[]),
+            NetworkTrend { rx_rate: 0.0, tx_rate: 0.0 }
+        );
+    }
+
+    #[test]
+    fn network_trend_is_zero_for_single_sample() {
+        assert_eq!(
+            analyze_network_trend(&[make_metrics(1000, 500)]),
+            NetworkTrend { rx_rate: 0.0, tx_rate: 0.0 }
+        );
+    }
+
+    #[test]
+    fn network_trend_is_finite_across_elapsed_samples() {
+        let first = make_metrics(1000, 500);
+        std::thread::sleep(std::time::Duration::from_millis(10));
+        let second = make_metrics(1000, 500);
+
+        let trend = analyze_network_trend(&[first, second]);
+
+        assert!(trend.rx_rate.is_finite() && trend.rx_rate > 0.0);
+        assert!(trend.tx_rate.is_finite() && trend.tx_rate > 0.0);
+        assert!(trend.rx_rate > trend.tx_rate);
     }
 }
