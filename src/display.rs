@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use sysinfo::{System, SystemExt, ProcessExt, CpuExt};
 use humansize::{format_size, BINARY};
-use crate::types::{SystemMetrics, SecurityAnalysis};
+use crate::types::{SystemMetrics, SecurityAnalysis, TempFileMetrics};
 use crate::config::Config;
 use crate::analysis::{analyze_cpu_trend, analyze_memory_trend, analyze_network_trend, classify_usage_pattern};
 
@@ -69,17 +69,17 @@ pub fn display_system_info(sys: &System) {
              sys.cpus().len());
 }
 
-pub fn display_temp_files(metrics: &SystemMetrics) {
+pub fn display_temp_files(temp_files: &TempFileMetrics) {
     println!("\n=== Temporary Files Analysis ===");
-    println!("Total Size: {}", format_size(metrics.temp_files.total_size, BINARY));
-    println!("Total Files: {}", metrics.temp_files.files.len());
-    
-    if !metrics.temp_files.files.is_empty() {
+    println!("Total Size: {}", format_size(temp_files.total_size, BINARY));
+    println!("Total Files: {}", temp_files.file_count);
+
+    if !temp_files.files.is_empty() {
         println!("\nAll Temporary Files:");
         println!("{:<10} {:<20} Path", "Size", "Last Modified");
         println!("{:-<80}", "");
         
-        for file in &metrics.temp_files.files {
+        for file in &temp_files.files {
             let last_modified = file.last_modified
                 .map(|time| {
                     time.duration_since(std::time::UNIX_EPOCH)
@@ -136,11 +136,10 @@ pub fn display_performance_analysis(metrics_history: &[SystemMetrics]) {
              format_size(network_trend.rx_rate as u64, BINARY),
              format_size(network_trend.tx_rate as u64, BINARY));
 
-    // Just show summary of temp files
     let latest_metrics = metrics_history.last().unwrap();
     println!("\nTemporary Files Summary:");
     println!("Total Size: {}", format_size(latest_metrics.temp_files.total_size, BINARY));
-    println!("Total Files: {}", latest_metrics.temp_files.files.len());
+    println!("Total Files: {}", latest_metrics.temp_files.file_count);
     println!("Use 'show-temp-files' command to view detailed listing");
 }
 
