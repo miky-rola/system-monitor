@@ -6,9 +6,9 @@ use core_foundation::dictionary::CFDictionary;
 use core_foundation::number::CFNumber;
 use core_foundation::string::CFString;
 use core_foundation_sys::array::{CFArrayGetCount, CFArrayGetValueAtIndex, CFArrayRef};
-use core_foundation_sys::base::{CFRelease, CFTypeRef};
+use core_foundation_sys::base::{CFGetTypeID, CFRelease, CFTypeRef};
 use core_foundation_sys::dictionary::CFDictionaryRef;
-use core_foundation_sys::string::CFStringRef;
+use core_foundation_sys::string::{CFStringGetTypeID, CFStringRef};
 
 type IOHIDEventSystemClientRef = *mut c_void;
 type IOHIDServiceClientRef = *mut c_void;
@@ -110,6 +110,10 @@ unsafe fn service_name(service: IOHIDServiceClientRef) -> Option<String> {
     let key = CFString::new("Product");
     let value = IOHIDServiceClientCopyProperty(service, key.as_concrete_TypeRef());
     if value.is_null() {
+        return None;
+    }
+    if CFGetTypeID(value) != CFStringGetTypeID() {
+        CFRelease(value);
         return None;
     }
     let name = CFString::wrap_under_create_rule(value as CFStringRef).to_string();

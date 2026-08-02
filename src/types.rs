@@ -1,9 +1,10 @@
 use std::collections::HashMap;
 use std::time::{SystemTime, Instant};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum MetricsScope {
     Full,
+    Summary,
     Light,
 }
 
@@ -52,11 +53,14 @@ pub struct ProcessMetrics {
     pub disk_usage: u64,
 }
 
+#[derive(Debug, Default, PartialEq)]
 pub struct TempFileMetrics {
     pub total_size: u64,
+    pub file_count: usize,
     pub files: Vec<TempFileInfo>,
 }
 
+#[derive(Debug, PartialEq)]
 pub struct TempFileInfo {
     pub path: String,
     pub size: u64,
@@ -76,6 +80,7 @@ pub struct UsageTrend {
     pub pattern: f64,
 }
 
+#[derive(Debug, PartialEq)]
 pub struct NetworkTrend {
     pub rx_rate: f64,
     pub tx_rate: f64,
