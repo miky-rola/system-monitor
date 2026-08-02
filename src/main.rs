@@ -1,6 +1,5 @@
 use std::time::Duration;
 use std::thread;
-use std::path::Path;
 use std::io::{self, Write};
 use clap::{Parser, Subcommand};
 use sysinfo::{System, SystemExt, PidExt};
@@ -107,8 +106,8 @@ fn prompt_apply_coolant(temp: f32, threshold: f64) -> bool {
 
 fn run_monitor(cfg: &config::Config) {
     let monitoring_duration = Duration::from_secs(cfg.monitoring.duration_secs);
-    let sample_interval = Duration::from_secs(cfg.monitoring.sample_interval_secs);
-    let samples = (monitoring_duration.as_secs() / sample_interval.as_secs()) as usize;
+    let sample_interval = Duration::from_secs(cfg.monitoring.sample_interval_secs.max(1));
+    let samples = ((monitoring_duration.as_secs() / sample_interval.as_secs()) as usize).max(1);
 
     let mut sys = System::new_all();
     #[cfg(target_os = "macos")]
@@ -119,9 +118,14 @@ fn run_monitor(cfg: &config::Config) {
     println!("Collecting system metrics over {} seconds...", monitoring_duration.as_secs());
     display_process_summary(&mut sys);
 
-    let mut metrics_history = Vec::new();
+    let mut metrics_history = Vec::with_capacity(samples);
     for i in 0..samples {
-        metrics_history.push(collect_system_metrics(&mut sys, MetricsScope::Full));
+        let scope = if i + 1 == samples {
+            MetricsScope::Summary
+        } else {
+            MetricsScope::Light
+        };
+        metrics_history.push(collect_system_metrics(&mut sys, scope));
 
         if i < samples - 1 {
             print!(".");
@@ -206,15 +210,9 @@ fn run_monitor(cfg: &config::Config) {
 }
 
 fn run_show_temp_files() {
-    let mut sys = System::new_all();
-    #[cfg(target_os = "macos")]
-    sys.refresh_all();
-    #[cfg(not(target_os = "macos"))]
-    sys.refresh_components_list();
-
     println!("Collecting temporary file information...");
-    let metrics = collect_system_metrics(&mut sys, MetricsScope::Full);
-    display_temp_files(&metrics);
+    let temp_files = metrics::collect_temp_files(MetricsScope::Full);
+    display_temp_files(&temp_files);
 }
 
 fn run_clean_temp() {
@@ -224,14 +222,7 @@ fn run_clean_temp() {
     };
 
     println!("\nCleaning temporary files...");
-    let temp_dir = std::env::temp_dir();
-    let temp_paths: Vec<&Path> = vec![
-        temp_dir.as_path(),
-        Path::new("/tmp"),
-        Path::new("/var/tmp"),
-    ];
-
-    let stats = delete_temp_files(&temp_paths, days_threshold);
+    let stats = delete_temp_files(&temp_manager::temp_roots(), days_threshold);
 
     println!("\nCleanup Results:");
     println!("Files Deleted: {}", stats.files_deleted);
@@ -241,6 +232,9 @@ fn run_clean_temp() {
         println!("\nErrors encountered:");
         for error in &stats.errors {
             println!("- {error}");
+        }
+        if stats.errors_omitted > 0 {
+            println!("- ...and {} more", stats.errors_omitted);
         }
     }
 }
