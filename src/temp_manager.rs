@@ -4,6 +4,23 @@ use walkdir::WalkDir;
 
 const MAX_REPORTED_ERRORS: usize = 50;
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum TempFileAge {
+    Recent,
+    Moderate,
+    Old,
+}
+
+impl TempFileAge {
+    pub fn includes(self, days_old: u64) -> bool {
+        match self {
+            Self::Recent => (1..=2).contains(&days_old),
+            Self::Moderate => (3..=5).contains(&days_old),
+            Self::Old => days_old >= 6,
+        }
+    }
+}
+
 #[derive(Debug, Default, PartialEq)]
 pub struct TempCleanupStats {
     pub files_deleted: usize,
@@ -62,7 +79,7 @@ fn dedup_roots(candidates: Vec<PathBuf>) -> Vec<PathBuf> {
     roots
 }
 
-pub fn delete_temp_files(paths: &[PathBuf], min_days_old: u64) -> TempCleanupStats {
+pub fn delete_temp_files(paths: &[PathBuf], age: TempFileAge) -> TempCleanupStats {
     let mut stats = TempCleanupStats::default();
     let current_time = std::time::SystemTime::now();
 
@@ -83,16 +100,13 @@ pub fn delete_temp_files(paths: &[PathBuf], min_days_old: u64) -> TempCleanupSta
             let Ok(modified) = metadata.modified() else {
                 continue;
             };
-            let Ok(age) = current_time.duration_since(modified) else {
+            let Ok(modified_ago) = current_time.duration_since(modified) else {
                 continue;
             };
-            let days_old = age.as_secs() / 86400;
+            let days_old = modified_ago.as_secs() / 86400;
 
-            match min_days_old {
-                2 => if !(1..=2).contains(&days_old) { continue; },
-                5 => if !(3..=5).contains(&days_old) { continue; },
-                6 => if days_old < 6 { continue; },
-                _ => continue,
+            if !age.includes(days_old) {
+                continue;
             }
 
             match fs::remove_file(entry.path()) {
@@ -114,6 +128,8 @@ pub fn delete_temp_files(paths: &[PathBuf], min_days_old: u64) -> TempCleanupSta
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::path::Path;
+    use std::time::{Duration, SystemTime};
 
     #[test]
     fn dedup_roots_drops_missing_paths() {
@@ -168,8 +184,71 @@ mod tests {
     }
 
     #[test]
+    fn age_brackets_cover_every_day_count_exactly_once() {
+        let brackets = |days_old| {
+            [TempFileAge::Recent, TempFileAge::Moderate, TempFileAge::Old]
+                .into_iter()
+                .filter(|age| age.includes(days_old))
+                .collect::<Vec<_>>()
+        };
+
+        assert_eq!(brackets(0), Vec::<TempFileAge>::new());
+        assert_eq!(brackets(1), vec![TempFileAge::Recent]);
+        assert_eq!(brackets(2), vec![TempFileAge::Recent]);
+        assert_eq!(brackets(3), vec![TempFileAge::Moderate]);
+        assert_eq!(brackets(5), vec![TempFileAge::Moderate]);
+        assert_eq!(brackets(6), vec![TempFileAge::Old]);
+        assert_eq!(brackets(100), vec![TempFileAge::Old]);
+    }
+
+    fn aged_file(dir: &Path, name: &str, days_old: u64) -> PathBuf {
+        let path = dir.join(name);
+        fs::write(&path, b"data").unwrap();
+        fs::File::options()
+            .write(true)
+            .open(&path)
+            .unwrap()
+            .set_modified(SystemTime::now() - Duration::from_secs(days_old * 86400 + 3600))
+            .unwrap();
+        path
+    }
+
+    #[test]
+    fn each_bracket_deletes_only_its_own_files() {
+        for (age, expected_survivors) in [
+            (TempFileAge::Recent, ["moderate.tmp", "old.tmp"]),
+            (TempFileAge::Moderate, ["old.tmp", "recent.tmp"]),
+            (TempFileAge::Old, ["moderate.tmp", "recent.tmp"]),
+        ] {
+            let dir = tempfile::tempdir().unwrap();
+            aged_file(dir.path(), "recent.tmp", 1);
+            aged_file(dir.path(), "moderate.tmp", 4);
+            aged_file(dir.path(), "old.tmp", 9);
+
+            let stats = delete_temp_files(&[dir.path().to_path_buf()], age);
+
+            assert_eq!(
+                stats,
+                TempCleanupStats {
+                    files_deleted: 1,
+                    bytes_freed: 4,
+                    errors: Vec::new(),
+                    errors_omitted: 0,
+                }
+            );
+
+            let mut survivors: Vec<String> = fs::read_dir(dir.path())
+                .unwrap()
+                .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
+                .collect();
+            survivors.sort();
+            assert_eq!(survivors, expected_survivors);
+        }
+    }
+
+    #[test]
     fn deleting_from_missing_path_reports_nothing() {
-        let stats = delete_temp_files(&[PathBuf::from("/nonexistent/temp/path")], 6);
+        let stats = delete_temp_files(&[PathBuf::from("/nonexistent/temp/path")], TempFileAge::Old);
         assert_eq!(stats, TempCleanupStats::default());
     }
 
@@ -179,7 +258,7 @@ mod tests {
         let file = dir.path().join("fresh.tmp");
         fs::write(&file, b"data").unwrap();
 
-        let stats = delete_temp_files(&[dir.path().to_path_buf()], 6);
+        let stats = delete_temp_files(&[dir.path().to_path_buf()], TempFileAge::Old);
 
         assert_eq!(stats, TempCleanupStats::default());
         assert!(file.exists());
