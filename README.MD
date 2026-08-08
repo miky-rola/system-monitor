@@ -76,7 +76,7 @@ git clone https://github.com/miky-rola/system-monitor && cd system-monitor && ca
 ```bash
 system-monitor                  # Full system report (30s collection)
 system-monitor daemon           # Background monitor with notifications
-system-monitor show-temp-files  # List temp files with sizes and ages
+system-monitor show-temp-files  # List the 500 largest temp files with sizes and ages
 system-monitor clean-temp       # Interactively clean temp files by age
 system-monitor config           # Show config path and current settings
 ```
