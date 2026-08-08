@@ -75,7 +75,11 @@ pub fn display_temp_files(temp_files: &TempFileMetrics) {
     println!("Total Files: {}", temp_files.file_count);
 
     if !temp_files.files.is_empty() {
-        println!("\nAll Temporary Files:");
+        if temp_files.files_omitted == 0 {
+            println!("\nAll Temporary Files:");
+        } else {
+            println!("\nLargest {} Temporary Files:", temp_files.files.len());
+        }
         println!("{:<10} {:<20} Path", "Size", "Last Modified");
         println!("{:-<80}", "");
         
@@ -103,11 +107,15 @@ pub fn display_temp_files(temp_files: &TempFileMetrics) {
                 })
                 .unwrap_or_else(|| "unknown".to_string());
 
-            println!("{:<10} {:<20} {}", 
+            println!("{:<10} {:<20} {}",
                 format_size(file.size, BINARY),
                 last_modified,
                 file.path
             );
+        }
+
+        if temp_files.files_omitted > 0 {
+            println!("...and {} more files not shown", temp_files.files_omitted);
         }
     }
 }
@@ -136,11 +144,12 @@ pub fn display_performance_analysis(metrics_history: &[SystemMetrics]) {
              format_size(network_trend.rx_rate as u64, BINARY),
              format_size(network_trend.tx_rate as u64, BINARY));
 
-    let latest_metrics = metrics_history.last().unwrap();
-    println!("\nTemporary Files Summary:");
-    println!("Total Size: {}", format_size(latest_metrics.temp_files.total_size, BINARY));
-    println!("Total Files: {}", latest_metrics.temp_files.file_count);
-    println!("Use 'show-temp-files' command to view detailed listing");
+    if let Some(latest_metrics) = metrics_history.last() {
+        println!("\nTemporary Files Summary:");
+        println!("Total Size: {}", format_size(latest_metrics.temp_files.total_size, BINARY));
+        println!("Total Files: {}", latest_metrics.temp_files.file_count);
+        println!("Use 'show-temp-files' command to view detailed listing");
+    }
 }
 
 pub fn display_security_analysis(analysis: &SecurityAnalysis) {    
