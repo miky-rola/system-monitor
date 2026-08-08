@@ -1,5 +1,4 @@
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
+use std::sync::mpsc::{self, Receiver, RecvTimeoutError};
 use std::time::Duration;
 use sysinfo::{System, SystemExt};
 use crate::config::Config;
@@ -8,12 +7,23 @@ use crate::notifications::NotificationManager;
 use crate::security::{perform_security_analysis, generate_recommendations};
 use crate::types::{MetricsScope, SystemMetrics};
 
+enum LoopControl {
+    Continue,
+    Stop,
+}
+
+fn wait_for_shutdown(shutdown: &Receiver<()>, timeout: Duration) -> LoopControl {
+    match shutdown.recv_timeout(timeout) {
+        Ok(()) | Err(RecvTimeoutError::Disconnected) => LoopControl::Stop,
+        Err(RecvTimeoutError::Timeout) => LoopControl::Continue,
+    }
+}
+
 pub fn run_daemon(config: &Config) {
-    let running = Arc::new(AtomicBool::new(true));
-    let running_clone = running.clone();
+    let (signal_sender, shutdown) = mpsc::channel();
 
     ctrlc::set_handler(move || {
-        running_clone.store(false, Ordering::SeqCst);
+        let _ = signal_sender.send(());
     })
     .expect("Failed to set signal handler");
 
@@ -37,7 +47,7 @@ pub fn run_daemon(config: &Config) {
     let max_history = 10;
     let mut metrics_history: Vec<SystemMetrics> = Vec::with_capacity(max_history);
 
-    while running.load(Ordering::SeqCst) {
+    loop {
         sys.refresh_all();
         let metrics = collect_system_metrics(&mut sys, MetricsScope::Light);
 
@@ -68,7 +78,10 @@ pub fn run_daemon(config: &Config) {
             log::info!("Recommendation: {rec}");
         }
 
-        std::thread::sleep(interval);
+        match wait_for_shutdown(&shutdown, interval) {
+            LoopControl::Stop => break,
+            LoopControl::Continue => {}
+        }
     }
 
     println!("Daemon stopped.");
@@ -100,6 +113,39 @@ mod tests {
                 components: HashMap::new(),
             },
         }
+    }
+
+    #[test]
+    fn a_signal_stops_the_loop_without_waiting_for_the_interval() {
+        let (sender, receiver) = mpsc::channel();
+        sender.send(()).unwrap();
+
+        let waited = Instant::now();
+        let control = wait_for_shutdown(&receiver, Duration::from_secs(60));
+
+        assert!(matches!(control, LoopControl::Stop));
+        assert!(waited.elapsed() < Duration::from_secs(1));
+    }
+
+    #[test]
+    fn a_dropped_sender_stops_the_loop() {
+        let (sender, receiver) = mpsc::channel::<()>();
+        drop(sender);
+
+        assert!(matches!(
+            wait_for_shutdown(&receiver, Duration::from_secs(60)),
+            LoopControl::Stop
+        ));
+    }
+
+    #[test]
+    fn the_loop_continues_when_no_signal_arrives() {
+        let (_sender, receiver) = mpsc::channel::<()>();
+
+        assert!(matches!(
+            wait_for_shutdown(&receiver, Duration::from_millis(10)),
+            LoopControl::Continue
+        ));
     }
 
     #[test]
