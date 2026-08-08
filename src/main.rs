@@ -29,7 +29,7 @@ use display::{
     display_process_summary
 };
 use security::{perform_security_analysis, generate_recommendations};
-use temp_manager::delete_temp_files;
+use temp_manager::{delete_temp_files, TempFileAge};
 use humansize::{format_size, BINARY};
 
 #[derive(Parser)]
@@ -57,7 +57,7 @@ enum Commands {
     Config,
 }
 
-fn prompt_temp_file_age() -> Option<u64> {
+fn prompt_temp_file_age() -> Option<TempFileAge> {
     println!("\nChoose files to delete based on age:");
     println!("1. Recent files (1-2 days old)");
     println!("2. Moderately old files (3-5 days old)");
@@ -73,15 +73,15 @@ fn prompt_temp_file_age() -> Option<u64> {
     match input.trim() {
         "1" => {
             println!("Deleting files 1-2 days old...");
-            Some(2)
+            Some(TempFileAge::Recent)
         }
         "2" => {
             println!("Deleting files 3-5 days old...");
-            Some(5)
+            Some(TempFileAge::Moderate)
         }
         "3" => {
             println!("Deleting files 6+ days old...");
-            Some(6)
+            Some(TempFileAge::Old)
         }
         "4" => {
             println!("Cleanup cancelled.");
@@ -106,8 +106,22 @@ fn prompt_apply_coolant(temp: f32, threshold: f64) -> bool {
 
 fn run_monitor(cfg: &config::Config) {
     let monitoring_duration = Duration::from_secs(cfg.monitoring.duration_secs);
+    if cfg.monitoring.sample_interval_secs == 0 {
+        log::warn!("monitoring.sample_interval_secs is 0; sampling every 1s instead");
+    }
+
     let sample_interval = Duration::from_secs(cfg.monitoring.sample_interval_secs.max(1));
-    let samples = ((monitoring_duration.as_secs() / sample_interval.as_secs()) as usize).max(1);
+    let samples = (monitoring_duration.as_secs() / sample_interval.as_secs()) as usize;
+    if samples == 0 {
+        log::warn!(
+            "monitoring.duration_secs ({}) is shorter than the {}s sample interval; \
+             collecting a single sample, so trends and network throughput will be degenerate",
+            monitoring_duration.as_secs(),
+            sample_interval.as_secs(),
+        );
+    }
+
+    let samples = samples.max(1);
 
     let mut sys = System::new_all();
     #[cfg(target_os = "macos")]
@@ -216,13 +230,12 @@ fn run_show_temp_files() {
 }
 
 fn run_clean_temp() {
-    let days_threshold = match prompt_temp_file_age() {
-        Some(days) => days,
-        None => return,
+    let Some(age) = prompt_temp_file_age() else {
+        return;
     };
 
     println!("\nCleaning temporary files...");
-    let stats = delete_temp_files(&temp_manager::temp_roots(), days_threshold);
+    let stats = delete_temp_files(&temp_manager::temp_roots(), age);
 
     println!("\nCleanup Results:");
     println!("Files Deleted: {}", stats.files_deleted);
@@ -240,6 +253,11 @@ fn run_clean_temp() {
 }
 
 fn main() {
+    #[cfg(unix)]
+    unsafe {
+        libc::signal(libc::SIGPIPE, libc::SIG_DFL);
+    }
+
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
     let cli = Cli::parse();
 
