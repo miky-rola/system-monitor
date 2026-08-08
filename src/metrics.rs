@@ -1,8 +1,12 @@
 use walkdir::WalkDir;
-use std::collections::HashMap;
+use std::cmp::Reverse;
+use std::collections::{BinaryHeap, HashMap};
 use std::path::PathBuf;
+use std::time::SystemTime;
 use sysinfo::{System, SystemExt, ProcessExt, DiskExt, CpuExt, NetworkExt, NetworksExt, ComponentExt};
 use crate::types::{SystemMetrics, DiskMetrics, ProcessMetrics, TempFileMetrics, TempFileInfo, TemperatureMetrics, TemperatureReading, MetricsScope};
+
+const MAX_LISTED_TEMP_FILES: usize = 500;
 
 pub fn collect_system_metrics(sys: &mut System, scope: MetricsScope) -> SystemMetrics {
     let temp_files = collect_temp_files(scope);
@@ -139,6 +143,7 @@ fn scan_temp_roots(roots: &[PathBuf], scope: MetricsScope) -> TempFileMetrics {
     }
 
     let mut metrics = TempFileMetrics::default();
+    let mut largest: BinaryHeap<Reverse<(u64, String, Option<SystemTime>)>> = BinaryHeap::new();
 
     for root in roots {
         for entry in WalkDir::new(root)
@@ -159,17 +164,44 @@ fn scan_temp_roots(roots: &[PathBuf], scope: MetricsScope) -> TempFileMetrics {
             metrics.file_count += 1;
 
             match scope {
-                MetricsScope::Full => metrics.files.push(TempFileInfo {
-                    path: entry.path().to_string_lossy().into_owned(),
-                    size,
-                    last_modified: metadata.modified().ok(),
-                }),
+                MetricsScope::Full => {
+                    let smallest_listed = match largest.peek() {
+                        Some(Reverse((listed_size, _, _))) => *listed_size,
+                        None => 0,
+                    };
+                    if largest.len() == MAX_LISTED_TEMP_FILES {
+                        if smallest_listed >= size {
+                            continue;
+                        }
+                        largest.pop();
+                    }
+
+                    largest.push(Reverse((
+                        size,
+                        entry.path().to_string_lossy().into_owned(),
+                        metadata.modified().ok(),
+                    )));
+                }
                 MetricsScope::Summary | MetricsScope::Light => {}
             }
         }
     }
 
-    metrics.files.sort_by_key(|file| std::cmp::Reverse(file.size));
+    match scope {
+        MetricsScope::Full => {
+            metrics.files_omitted = metrics.file_count - largest.len();
+            metrics.files = largest
+                .into_sorted_vec()
+                .into_iter()
+                .map(|Reverse((size, path, last_modified))| TempFileInfo {
+                    path,
+                    size,
+                    last_modified,
+                })
+                .collect();
+        }
+        MetricsScope::Summary | MetricsScope::Light => {}
+    }
 
     metrics
 }
@@ -248,6 +280,7 @@ mod tests {
                 total_size: 110,
                 file_count: 2,
                 files: Vec::new(),
+                files_omitted: 0,
             }
         );
     }
@@ -260,10 +293,35 @@ mod tests {
 
         assert_eq!(metrics.total_size, 110);
         assert_eq!(metrics.file_count, 2);
+        assert_eq!(metrics.files_omitted, 0);
         assert_eq!(
             metrics.files.iter().map(|file| file.size).collect::<Vec<_>>(),
             vec![100, 10]
         );
         assert!(metrics.files[0].path.ends_with("large.tmp"));
+    }
+
+    #[test]
+    fn full_scope_lists_only_the_largest_files() {
+        let dir = tempfile::tempdir().unwrap();
+        let file_count = MAX_LISTED_TEMP_FILES + 10;
+        for size in 1..=file_count {
+            std::fs::write(dir.path().join(format!("{size}.tmp")), vec![0u8; size]).unwrap();
+        }
+
+        let metrics = scan_temp_roots(&[dir.path().to_path_buf()], MetricsScope::Full);
+
+        assert_eq!(metrics.file_count, file_count);
+        assert_eq!(metrics.total_size, (file_count * (file_count + 1) / 2) as u64);
+        assert_eq!(metrics.files.len(), MAX_LISTED_TEMP_FILES);
+        assert_eq!(metrics.files_omitted, 10);
+        assert_eq!(
+            metrics.files.iter().map(|file| file.size).collect::<Vec<_>>(),
+            (1..=file_count)
+                .rev()
+                .take(MAX_LISTED_TEMP_FILES)
+                .map(|size| size as u64)
+                .collect::<Vec<_>>()
+        );
     }
 }

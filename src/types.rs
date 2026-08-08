@@ -58,6 +58,7 @@ pub struct TempFileMetrics {
     pub total_size: u64,
     pub file_count: usize,
     pub files: Vec<TempFileInfo>,
+    pub files_omitted: usize,
 }
 
 #[derive(Debug, PartialEq)]
@@ -74,6 +75,7 @@ pub struct SecurityAnalysis {
     pub swap_pressure: Vec<String>,
 }
 
+#[derive(Debug, PartialEq)]
 pub struct UsageTrend {
     pub average: f64,
     pub peak: f64,

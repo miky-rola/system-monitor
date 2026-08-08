@@ -1,7 +1,11 @@
 use crate::types::{SystemMetrics, UsageTrend, NetworkTrend, };
 
 pub fn analyze_cpu_trend(metrics_history: &[SystemMetrics]) -> Vec<UsageTrend> {
-    let cpu_count = metrics_history[0].cpu_usage.len();
+    let Some(first) = metrics_history.first() else {
+        return Vec::new();
+    };
+
+    let cpu_count = first.cpu_usage.len();
     let mut trends = Vec::with_capacity(cpu_count);
 
     for core in 0..cpu_count {
@@ -24,6 +28,10 @@ pub fn analyze_cpu_trend(metrics_history: &[SystemMetrics]) -> Vec<UsageTrend> {
 }
 
 pub fn analyze_memory_trend(metrics_history: &[SystemMetrics]) -> UsageTrend {
+    if metrics_history.is_empty() {
+        return UsageTrend { average: 0.0, peak: 0.0, pattern: 0.0 };
+    }
+
     let usages: Vec<u64> = metrics_history.iter()
         .map(|m| m.memory_usage)
         .collect();
@@ -129,6 +137,35 @@ mod tests {
                 components: HashMap::new(),
             },
         }
+    }
+
+    #[test]
+    fn cpu_trend_is_empty_for_empty_history() {
+        assert_eq!(analyze_cpu_trend(&[]), Vec::<UsageTrend>::new());
+    }
+
+    #[test]
+    fn cpu_trend_has_one_entry_per_core() {
+        assert_eq!(
+            analyze_cpu_trend(&[make_metrics(0, 0)]),
+            vec![UsageTrend { average: 10.0, peak: 10.0, pattern: 0.0 }]
+        );
+    }
+
+    #[test]
+    fn memory_trend_is_zero_for_empty_history() {
+        assert_eq!(
+            analyze_memory_trend(&[]),
+            UsageTrend { average: 0.0, peak: 0.0, pattern: 0.0 }
+        );
+    }
+
+    #[test]
+    fn memory_trend_reports_a_single_sample() {
+        assert_eq!(
+            analyze_memory_trend(&[make_metrics(0, 0)]),
+            UsageTrend { average: 50.0, peak: 50.0, pattern: 0.0 }
+        );
     }
 
     #[test]
